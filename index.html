@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VRM ランタン1〜8面（番号・表示切替）</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0b0e;color:#e8e6e1;font:13px/1.4 system-ui,sans-serif;overflow:hidden}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #ui{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(20,22,27,.85);display:flex;flex-wrap:wrap;gap:0 10px;align-items:center;align-content:flex-start;max-height:46vh;overflow-y:auto;box-sizing:border-box}
+  button,label.b{background:#262a32;color:inherit;border:1px solid #3a404b;border-radius:8px;padding:7px 10px;font:inherit}
+  input[type=file]{display:none}
+  select{background:#262a32;color:inherit;border:1px solid #3a404b;border-radius:8px;padding:6px;max-width:130px;font:inherit}
+  .s{display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap}
+  .s input{width:78px;accent-color:#7fd0c4}
+  #st{flex-basis:100%;font-size:12px;opacity:.8}
+  #top{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;position:sticky;top:0;z-index:2;background:rgba(20,22,27,.97);padding-bottom:6px}
+  details{flex-basis:100%;border-top:1px solid #3a404b}
+  summary{cursor:pointer;font-size:12px;opacity:.9;padding:6px 0;user-select:none}
+  .g{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:2px 0 8px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="mn" style="position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:8px;z-index:5;opacity:.8">メニュー</button>
+<div id="ui">
+  <div id="top">
+    <button id="cam">カメラ開始</button>
+    <button id="play">再生</button><button id="fm">フリック: モデル</button>
+    <span id="st">モデルを選んでください。カメラなしではドラッグで視点が動きます。</span>
+  </div>
+  <details id="d1" open><summary>モデル・モーション</summary><div class="g">
+    <label class="b">モデルを追加(.vrm/.zip/.pmx)<input type="file" id="mf" multiple></label>
+    <select id="ml"><option value="">（モデルなし）</option></select>
+    <button id="mld">モデル削除</button>
+    <label class="b">MMD重力<input type="range" id="mg" min="0.5" max="4" step="0.25" value="1"></label>
+    <label class="b">接地補正(VRMA)<input type="range" id="mgr" min="0" max="2" step="0.1" value="1"></label>
+    <label class="b">足の交差防止(VMD)<input type="range" id="mxg" min="0" max="1" step="0.05" value="0.4"></label>
+    <label class="b">ひざの交差防止(IK後)<input type="range" id="mkc" min="0" max="1.5" step="0.05" value="0.7"></label>
+    <label class="b">MMD物理の細かさ<input type="range" id="mpq" min="1" max="3" step="0.5" value="1.5"></label>
+    <label class="b">足の当たり判定の太さ<input type="range" id="mlc" min="1" max="1.6" step="0.05" value="1.15"></label>
+    <label class="b">速度上限 <span id="pvt">300</span><input type="range" id="pvs" min="50" max="600" step="10" value="300"></label>
+    <label class="b">MMDの明るさ<input type="range" id="mb" min="0" max="1" step="0.05" value="0.85"></label>
+    <label class="s"><input type="checkbox" id="mr" style="width:auto" checked>MMDの待機ポーズをリラックス</label>
+    <label class="b">MMDの腕の角度(度)<input type="range" id="ma" min="0" max="60" step="1" value="20"></label>
+    <label class="b">MMDの手の握り<input type="range" id="mh" min="0" max="2.5" step="0.05" value="1.25"></label>
+    <label class="s"><input type="checkbox" id="mhf" style="width:auto">握りの向き反転</label>
+    <span class="s">立ち位置 左右<input type="range" id="stx" min="-15" max="15" step="0.1" value="0"></span>
+    <span class="s">立ち位置 前後<input type="range" id="stz" min="-15" max="100" step="0.1" value="0"></span>
+    <label class="s"><input type="checkbox" id="stc" style="width:auto" checked>高さ調整を使う</label>
+    <span class="s">立ち位置 高さ<input type="range" id="sty" min="-5" max="5" step="0.1" value="0"></span>
+    <button id="stR">立ち位置を戻す</button>
+    <label class="b">モーション(.vrma/.vmd)<input type="file" id="fw" multiple></label>
+    <select id="ms"><option value="-1">（未読込）</option></select>
+    <button id="mdel">削除</button>
+    <label class="s"><input type="checkbox" id="lp" style="width:auto">ループ</label>
+    <label class="s"><input type="checkbox" id="sq" style="width:auto">順番に再生</label>
+    <label class="s"><input type="checkbox" id="mp" style="width:auto" checked>MMD物理</label>
+    <label class="s"><input type="checkbox" id="ph0" style="width:auto">開始・終了0.5秒は物理オフ</label>
+    <label class="s"><input type="checkbox" id="ph1" style="width:auto" checked>開始は基本姿勢から移行</label>
+    <label class="s"><input type="checkbox" id="pv" style="width:auto" checked>物理の速度上限</label>
+    <label class="b">既定の音<input type="file" id="fa"></label>
+    <label class="b">このモーションの音<input type="file" id="fmu"></label>
+    <button id="fmx">音を外す</button>
+    <span class="s">音量<input type="range" id="vo" min="0" max="1" step="0.05" value="0.8"></span>
+  </div></details>
+  <details id="d2"><summary>面・表示</summary><div class="g">
+    <select id="nf"><option value="1">面数: 1</option><option value="2" selected>面数: 2</option><option value="3">面数: 3</option><option value="4">面数: 4</option><option value="5">面数: 5</option><option value="6">面数: 6</option><option value="7">面数: 7</option><option value="8">面数: 8</option></select>
+    <button id="lay">並び: 左右</button>
+    <button id="pvb">表示: 平面</button>
+    <button id="fs1">全画面</button>
+    <button id="pmb">平面: 見える面</button>
+    <button id="cpb">携帯2台</button>
+    <label class="s"><input type="checkbox" id="gr" style="width:auto" checked>メッシュ</label>
+    <select id="qa"><option value="0">解像度: 自動</option><option>256</option><option>384</option><option>512</option><option>768</option><option>1024</option></select>
+    <label class="s"><input type="checkbox" id="aa" style="width:auto" checked>AA</label>
+    <label class="s"><input type="checkbox" id="df" style="width:auto">ぼかし</label>
+    <span class="s">ぼかし強さ<input type="range" id="dk" min="0" max="1" step="0.05" value="0.5"></span>
+    <span class="s">ピント範囲<input type="range" id="dr" min="0" max="20" step="0.5" value="4"></span>
+    <select id="dq"><option value="10">ぼかし品質: 低</option><option value="16" selected>ぼかし品質: 中</option><option value="28">ぼかし品質: 高</option></select>
+    <select id="ds"><option value="1">ぼかし解像度: 等倍</option><option value="0.75" selected>ぼかし解像度: 0.75</option><option value="0.5">ぼかし解像度: 0.5</option></select>
+    <span class="s">面の幅<input type="range" id="sw" min="4" max="12" step="0.1" value="7"></span>
+    <span class="s">面の高さ<input type="range" id="sh" min="5" max="16" step="0.1" value="13"></span>
+    <span class="s">身長<input type="range" id="ch" min="5" max="20" step="0.5" value="11"></span>
+    <span class="s">角の開き(2面)<input type="range" id="an" min="60" max="150" step="1" value="90"></span>
+    <span class="s">端末幅<input type="range" id="pw" min="4" max="10" step="0.1" value="7"></span>
+    <span class="s">箱の倍率<input type="range" id="pk" min="0.3" max="1.2" step="0.05" value="0.6"></span>
+    <span class="s">窓の上下の枠(mm)<input type="range" id="frm" min="0" max="15" step="0.5" value="5"></span>
+    <span class="s">箱の上下<input type="range" id="py" min="-8" max="8" step="0.1" value="0"></span>
+  </div></details>
+  <details id="d3"><summary>視点</summary><div class="g">
+    <span class="s">距離<input type="range" id="di" min="15" max="60" step="1" value="30"></span>
+    <span class="s">顔の追従<input type="range" id="gz" min="0" max="1" step="0.05" value="0.7"></span>
+    <button id="dm">ドラッグ: 向き</button>
+    <button id="fr">正面</button>
+  </div></details>
+  <details id="d4"><summary>キャラの動き</summary><div class="g">
+    <span class="s">腕<input type="range" id="am" min="0" max="1.5" step="0.05" value="1.2"></span>
+    <span class="s">肘の曲げ<input type="range" id="el" min="0" max="1.2" step="0.05" value="0.2"></span>
+    <span class="s">手の握り<input type="range" id="hd" min="0" max="2.5" step="0.05" value="1.25"></span>
+    <button id="hr">手を変える</button>
+    <span class="s">肩の落ち<input type="range" id="sd" min="0" max="2" step="0.05" value="1"></span>
+    <span class="s">腕の揺れ<input type="range" id="sy" min="0" max="3" step="0.1" value="1.5"></span>
+    <span class="s">瞬き<input type="range" id="bl" min="0" max="2" step="0.1" value="0.3"></span>
+    <span class="s">視線の泳ぎ<input type="range" id="wd" min="0" max="6" step="0.1" value="3"></span>
+    <span class="s">呼吸<input type="range" id="br" min="0" max="3" step="0.1" value="1"></span>
+  </div></details>
+  <details id="d5"><summary>光</summary><div class="g">
+    <select id="lt"><option value="0">光: 太陽</option><option value="1">光: 月</option><option value="2">光: スポット</option><option value="3">光: ランタン</option><option value="4">光: 白色</option><option value="5">光: 空に連動</option></select>
+    <select id="lh"><option value="0">ランタン: 足下</option><option value="1" selected>ランタン: 腰</option><option value="2">ランタン: 頭上</option></select>
+    <select id="nl"><option value="0">夜の光: 月</option><option value="1">夜の光: 暗い</option><option value="2">夜の光: ランタン</option><option value="3">夜の光: ランダム</option></select>
+    <span class="s">炎のゆらぎ<input type="range" id="fk" min="0" max="3" step="0.1" value="1.5"></span>
+  </div></details>
+  <details id="d6"><summary>背景・床</summary><div class="g">
+    <select id="fl"><option value="0">床: なし</option><option value="1">床: 市松</option><option value="2">床: 木目</option><option value="3">床: 石畳</option><option value="4">床: 芝</option><option value="5">床: 無地</option></select>
+    <select id="bg"><option value="0">背景: 暗</option><option value="6">背景: 無し(黒)</option><option value="1">背景: 昼</option><option value="2">背景: 夕焼け</option><option value="3">背景: 夜</option><option value="4">背景: 屋内</option><option value="5">背景: 昼夜変化</option><option value="7">背景: 廊下</option></select>
+    <select id="tm"><option value="0">時間: ゆっくり</option><option value="1">時間: 実時刻</option></select>
+    <span class="s">壁までの距離<input type="range" id="rk" min="1.1" max="4" step="0.1" value="1.5"></span>
+    <label class="s"><input type="checkbox" id="b2" style="width:auto">奥にもう1人</label>
+    <label class="b">奥の人のモデル(.vrm)<input type="file" id="fb"></label>
+    <select id="bp"><option value="auto">奥の人のポーズ: 自動（座り→リラックス→立ち）</option><option value="cur">奥の人のポーズ: 選択中のモーション</option><option value="stand">奥の人のポーズ: 立ち</option></select>
+    <button id="b2r">奥の人を作り直す</button>
+    <select id="b2s"><option value="1">奥の人: 右の壁寄り</option><option value="-1">奥の人: 左の壁寄り</option></select>
+    <label class="s"><input type="checkbox" id="b2i" style="width:auto" checked>奥の人の彩度を落とす</label>
+    <span class="s">奥の人の位置<input type="range" id="b2z" min="0" max="0.9" step="0.05" value="0.5"></span>
+    <span class="s">廊下の長さ(m相当)<input type="range" id="cd" min="10" max="20" step="1" value="15"></span>
+    <span class="s">廊下の奥の暗さ<input type="range" id="cfg" min="0" max="0.9" step="0.05" value="0.35"></span>
+    <span class="s">時間の流れ<input type="range" id="ts" min="0" max="5" step="0.1" value="1"></span>
+    <span class="s">雲の流れ<input type="range" id="cl" min="0" max="5" step="0.1" value="1"></span>
+    <span class="s">雲の濃さ<input type="range" id="cq" min="0" max="1.5" step="0.05" value="1"></span>
+    <span class="s">雲の量<input type="range" id="cv" min="0" max="1" step="0.02" value="0.5"></span>
+    <span class="s">雲の大きさ<input type="range" id="cz" min="0.5" max="3" step="0.1" value="1"></span>
+  </div></details>
+  <details id="d7"><summary>小物</summary><div class="g">
+    <span id="pr" style="display:contents">
+    <label class="b">小物を追加(.glb)<input type="file" id="of"></label>
+    <select id="oo"><option value="-1">（小物なし）</option></select>
+    <span class="s">左右<input type="range" id="ox" min="-15" max="15" step="0.1" value="0"></span>
+    <span class="s">前後<input type="range" id="oz" min="-15" max="15" step="0.1" value="0"></span>
+    <span class="s">高さ<input type="range" id="oy" min="0" max="16" step="0.1" value="0"></span>
+    <span class="s">大きさ<input type="range" id="os" min="0.2" max="3" step="0.05" value="1"></span>
+    <span class="s">向き<input type="range" id="or" min="-180" max="180" step="1" value="0"></span>
+    <label class="s"><input type="checkbox" id="ol" style="width:auto">光源</label>
+    <label class="s"><input type="checkbox" id="ot" style="width:auto">すり抜け</label>
+    <label class="s"><input type="checkbox" id="ow" style="width:auto">揺れ</label>
+    <button id="od">小物を外す</button>
+    </span>
+    <span class="s">揺れの強さ<input type="range" id="sk" min="0" max="3" step="0.1" value="1"></span>
+    <label class="s"><input type="checkbox" id="lc" style="width:auto" checked>脚のコライダー</label>
+    <span class="s">脚コライダーの大きさ<input type="range" id="lcs" min="0.5" max="1.5" step="0.05" value="1"></span>
+  </div></details>
+  <details id="d8"><summary>保存</summary><div class="g">
+    <button id="cm">モデルを全部消す</button>
+    <button id="clr">保存を消す</button>
+  </div></details>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "fflate": "https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js",
+  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.0.0/lib/three-vrm.module.min.js",
+  "@pixiv/three-vrm-animation": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm-animation@3.0.0/lib/three-vrm-animation.module.js"
+} }
+</script>
+<style>
+#rv{display:none;position:fixed;inset:0;width:100%;height:100%;background:#000;object-fit:contain;z-index:40}
+body.rcv #rv{display:block} body.rcv #ui{display:none}
+#cp{display:none;position:fixed;left:8px;right:8px;top:8px;z-index:60;background:rgba(20,20,28,.94);color:#eee;padding:10px;border-radius:10px;font-size:13px}
+#cp.on{display:block} #cp textarea{width:100%;height:84px;margin:6px 0;font-size:11px} #cp button{margin:2px}
+</style>
+<video id="rv" autoplay muted playsinline></video>
+<div id="cp"><b>携帯2台で2面（同じWi-Fi内）</b><br>
+  母機：面数を2面にして「母機：コード作成」→コードを子機へ。子機：「子機：コード貼付→応答」→応答コードを母機へ。母機：「母機：応答で接続」<br>
+  <textarea id="cpt" placeholder="接続コード／応答コード"></textarea>
+  <button id="cpo">母機：コード作成</button><button id="cpa">子機：コード貼付→応答</button><button id="cpc">母機：応答で接続</button><button id="cp0">母機：0番全画面 ON</button><button id="cpy">コピー</button><button id="cpx">閉じる</button>
+  <div id="cps">待機中</div></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { unzipSync } from 'fflate';
+import { MMDLoader } from 'three/addons/loaders/MMDLoader.js';
+import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js';
+import { VRMLoaderPlugin, VRMUtils, VRMSpringBoneCollider, VRMSpringBoneColliderShapeSphere } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+
+const $ = id => document.getElementById(id), OV = {}, val = id => id in OV ? OV[id] : +$(id).value, st = t => $('st').textContent = t;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const A = (a, b) => a.clone().add(b), M = (a, s) => a.clone().multiplyScalar(s);
+
+// ---- 保存：パラメータは localStorage、ファイルは IndexedDB（中身ごと） ----
+const KEY = 'vrmLantern.params';
+const saved = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })();
+const DB = new Promise((res, rej) => {
+  const r = indexedDB.open('vrmLantern', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('f');
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+const idb = (mode, fn) => DB.then(db => new Promise((res, rej) => {
+  const t = db.transaction('f', mode), q = fn(t.objectStore('f'));
+  t.oncomplete = () => res(q?.result); t.onerror = () => rej(t.error);
+}));
+const put = (k, v) => idb('readwrite', s => s.put(v, k)).catch(e => { console.warn('保存失敗', e); setTimeout(() => st('保存失敗: ' + (e?.message || e)), 1500); });
+const get = k => idb('readonly', s => s.get(k));
+// 選んだファイルは中身を丸ごとコピーして保存する（元ファイルへの参照のままだと、移動・更新後に読めなくなる）
+const own = async f => new File([await f.arrayBuffer()], f.name, { type: f.type });
+const fail = e => setTimeout(() => st('保存失敗: ' + (e?.message || e)), 1500);
+const keep = (k, f) => own(f).then(o => put(k, o)).catch(fail);
+
+// ---- 世界 ----
+// 原点＝ユニットの手前の角の床。+x 右 / +y 上 / +z 見る人側。単位はモデル単位。
+// 面は外向き法線。ユニットを外から眺め、キャラは中央に立つ。
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x0b0b0e);
+renderer.setScissorTest(true);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;                 // 影は1フレームに1回だけ更新
+const scene = new THREE.Scene();
+
+// ---- 照明（プリセットで切り替え） ----
+const hemi = new THREE.HemisphereLight(0xffffff, 0x555566, 1.8); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 2); scene.add(sun, sun.target);
+const spot = new THREE.SpotLight(0xffffff, 0, 0, 0.3, 0.5, 0); scene.add(spot, spot.target);
+const lamp = new THREE.PointLight(0xff9a3c, 0, 0, 1); scene.add(lamp);
+let lampBase = new THREE.Vector3(), lampPos = null;                                    // 光源にした小物の位置（無ければ null）
+const props = [], propG = new THREE.Group(), actG = new THREE.Group();   // actG: キャラ(rig)と小物(propG)の親。遠近強調のとき、面ごとに変形して描く
+actG.matrixAutoUpdate = false; scene.add(actG); actG.add(propG);
+[sun, spot, lamp].forEach(l => { l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.normalBias = 0.005; });
+const shadowFloor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({ opacity: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+shadowFloor.rotation.x = -Math.PI / 2; shadowFloor.receiveShadow = true; scene.add(shadowFloor);
+const poolC = document.createElement('canvas'); poolC.width = poolC.height = 128;
+{ const g = poolC.getContext('2d'), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }
+const pool = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(poolC), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));   // 床と同じ高さ付近で重なるので手前に出す
+pool.rotation.x = -Math.PI / 2; pool.renderOrder = -1; scene.add(pool);
+
+// ---- 床と背景のプリセット（模様はコードで生成。画像ファイルは使わない） ----
+const tx = {}, T = (k, f) => tx[k] ||= f();
+const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function ctex(w, h, draw, seed = 1) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), rng(seed), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+const FLOOR = {                                         // [1タイルの大きさ(cm), 画像サイズ, 描画]
+  1: [6, 256, (g, R, w, h) => { for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = (i + j) % 2 ? '#5a5648' : '#d8d2c4'; g.fillRect(i * w / 2, j * h / 2, w / 2, h / 2); } }],
+  2: [12, 512, (g, R, w, h) => {
+    for (let r = 0; r < 8; r++) {
+      const y = r * h / 8; g.fillStyle = `hsl(${24 + R() * 8},${45 + R() * 15}%,${32 + R() * 14}%)`; g.fillRect(0, y, w, h / 8);
+      for (let i = 0; i < 24; i++) {
+        const x = R() * w, yy = y + R() * h / 8;
+        g.strokeStyle = R() < .5 ? `rgba(0,0,0,${.05 + R() * .08})` : `rgba(255,230,200,${.05 + R() * .08})`;
+        g.beginPath(); g.moveTo(x, yy); g.lineTo(x + 60 + R() * 200, yy + (R() - .5) * 3); g.stroke();
+      }
+      g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, y, w, 2); g.fillRect(R() * w, y, 2, h / 8);
+    } }],
+  3: [10, 512, (g, R, w, h) => {
+    g.fillStyle = '#3b3b3f'; g.fillRect(0, 0, w, h); const rows = 6, rh = h / rows;
+    for (let r = 0; r < rows; r++) { let x = 0; while (x < w) {
+      let sw = 70 + R() * 80; if (x + sw > w - 50) sw = w - x;
+      const v = 100 + R() * 60 | 0; g.fillStyle = `rgb(${v},${v - 4},${v - 10})`; g.fillRect(x + 3, r * rh + 3, sw - 6, rh - 6); x += sw;
+    } } }],
+  4: [6, 256, (g, R, w, h) => {
+    g.fillStyle = '#35602a'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 1800; i++) {
+      const x = R() * w, y = R() * h; g.strokeStyle = `hsl(${95 + R() * 35},${45 + R() * 25}%,${22 + R() * 22}%)`;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + (R() - .5) * 4, y - 3 - R() * 5); g.stroke();
+    } }]
+};
+const PC = o => ({ top: new THREE.Color(o.top), mid: new THREE.Color(o.mid), hor: new THREE.Color(o.hor), g0: new THREE.Color(o.g0), g1: new THREE.Color(o.g1),
+  cl: new THREE.Color(o.cl), hc: new THREE.Color(o.hc), hg: new THREE.Color(o.hg), sc: new THREE.Color(o.sc),
+  st: o.st, ca: o.ca, hi: o.hi, si: o.si, nt: o.nt, sx: o.sp[0], sy: o.sp[1], sz: o.sp[2] });
+// 空の色(top/mid/hor/g0/g1)・星の濃さ(st)・雲の色と濃さ(cl/ca)・部屋の光(hc,hg,hi=環境光 sc,si=太陽/月 sp=光の向き)・夜らしさ(nt、小物のランタンの点灯に使う)
+const DAY = PC({ top: '#2f6fd0', mid: '#6fb0ea', hor: '#d6ecff', g0: '#8aa07a', g1: '#5e7350', st: 0, cl: '#ffffff', ca: 0.9, hc: '#fff2dd', hg: '#665544', hi: 1.2, sc: '#ffe2b0', si: 2.6, sp: [-0.4, 1, 0.5], nt: 0 });
+const DUSK = PC({ top: '#2a2d63', mid: '#c9657a', hor: '#ffd9a0', g0: '#4a3030', g1: '#241818', st: 0.15, cl: '#ffb08a', ca: 0.8, hc: '#ffb88a', hg: '#3a2420', hi: 0.7, sc: '#ff9a5a', si: 1.6, sp: [-0.9, 0.35, 0.5], nt: 0.5 });
+const NIGHT = PC({ top: '#03040c', mid: '#101a38', hor: '#27345c', g0: '#0b0d18', g1: '#05060b', st: 1, cl: '#3a4670', ca: 0.35, hc: '#8aa4ff', hg: '#1a2038', hi: 0.6, sc: '#aec6ff', si: 0.9, sp: [0.5, 1, 0.4], nt: 1 });
+const DAWN = PC({ top: '#3a3a7a', mid: '#d98aa0', hor: '#ffe6b8', g0: '#4a3a38', g1: '#241c1c', st: 0.1, cl: '#ffc8a8', ca: 0.8, hc: '#ffd0b0', hg: '#403038', hi: 0.8, sc: '#ffc79a', si: 1.8, sp: [0.9, 0.4, 0.5], nt: 0.4 });
+const CUR = PC({ top: '#000', mid: '#000', hor: '#000', g0: '#000', g1: '#000', st: 0, cl: '#000', ca: 0, hc: '#000', hg: '#000', hi: 0, sc: '#000', si: 0, sp: [0, 1, 0], nt: 0 });
+const CKEYS = ['top', 'mid', 'hor', 'g0', 'g1', 'cl', 'hc', 'hg', 'sc'], NKEYS = ['st', 'ca', 'hi', 'si', 'nt', 'sx', 'sy', 'sz'];
+function blend(A, B, f) { CKEYS.forEach(n => CUR[n].copy(A[n]).lerp(B[n], f)); NKEYS.forEach(n => CUR[n] = A[n] + (B[n] - A[n]) * f); return CUR; }
+function palAt(keys, x) {                                                              // キーフレーム列から x の位置の状態を作る
+  let i = 0; while (i < keys.length - 2 && x > keys[i + 1][0]) i++;
+  const [x0, A] = keys[i], [x1, B] = keys[i + 1]; let f = Math.min(Math.max((x - x0) / (x1 - x0), 0), 1); f = f * f * (3 - 2 * f);
+  return blend(A, B, f);
+}
+const SLOW = [[0, DAY], [0.25, DUSK], [0.5, NIGHT], [0.75, DAWN], [1, DAY]];                                       // 位相 0〜1
+const REAL = [[0, NIGHT], [5.5, NIGHT], [6.5, DAWN], [8.5, DAY], [16, DAY], [17.5, DUSK], [19.5, NIGHT], [24, NIGHT]];   // 実時刻（時）
+const skyU = { top: { value: new THREE.Color() }, mid: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, g0: { value: new THREE.Color() }, g1: { value: new THREE.Color() } };
+const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, uniforms: skyU,
+  vertexShader: 'varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform vec3 top, mid, hor, g0, g1; varying vec3 d;
+    void main(){ float h = d.y;
+      vec3 c = h >= 0.0 ? mix(mix(hor, mid, smoothstep(0.0, 0.35, h)), top, smoothstep(0.35, 1.0, h)) : mix(g0, g1, smoothstep(0.0, 0.6, -h));
+      gl_FragColor = vec4(c, 1.0);
+      #include <colorspace_fragment>
+    }` });
+const cloudU = { col: { value: new THREE.Color() }, op: { value: 1 }, cov: { value: 0.5 }, sc: { value: 2.5 }, t: { value: 0 } };
+const cloud = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.BackSide, uniforms: cloudU,   // 雲：ノイズで描く（画像を使わない）
+  vertexShader: 'varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform vec3 col; uniform float op, cov, sc, t; varying vec3 d;
+    float hs(vec3 p){ p = fract(p * 0.3183099 + vec3(0.1)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float nz(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hs(i), hs(i + vec3(1,0,0)), f.x), mix(hs(i + vec3(0,1,0)), hs(i + vec3(1,1,0)), f.x), f.y),
+                 mix(mix(hs(i + vec3(0,0,1)), hs(i + vec3(1,0,1)), f.x), mix(hs(i + vec3(0,1,1)), hs(i + vec3(1,1,1)), f.x), f.y), f.z); }
+    float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * nz(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; } return s; }
+    void main(){
+      vec3 p = normalize(d);
+      float n = fbm(vec3(p.x, p.y * 2.2, p.z) * sc + vec3(0.0, 0.0, t));           // 横に伸ばして雲らしく。tでゆっくり形が変わる
+      float band = smoothstep(0.0, 0.1, p.y) * (1.0 - smoothstep(0.55, 0.9, p.y));  // 地平線付近と真上は薄く
+      float a = smoothstep(1.0 - cov, 1.0 - cov + 0.22, n) * band * op;
+      vec3 c = col * (0.72 + 0.38 * smoothstep(0.3, 0.9, n));                       // 中心ほど明るく、縁はやや陰に
+      gl_FragColor = vec4(c, a);
+      #include <colorspace_fragment>
+    }` }));
+cloud.renderOrder = -1; cloud.frustumCulled = false; scene.add(cloud);
+const starGeo = new THREE.BufferGeometry(), SN = 320, sp = new Float32Array(SN * 3), sph = new Float32Array(SN), sr = rng(11);
+for (let i = 0; i < SN; i++) { const y = 0.05 + sr() * 0.95, a = sr() * 6.2832, r = Math.sqrt(1 - y * y); sp.set([r * Math.cos(a), y, r * Math.sin(a)], i * 3); sph[i] = sr(); }
+starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3)); starGeo.setAttribute('ph', new THREE.BufferAttribute(sph, 1));
+const starMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { t: { value: 0 }, a: { value: 1 }, px: { value: 3 * renderer.getPixelRatio() } },
+  vertexShader: `attribute float ph; varying float v; uniform float t; uniform float px;
+    void main(){ v = 0.55 + 0.45 * sin(t * (1.5 + fract(ph * 7.0) * 2.5) + ph * 6.2831); gl_PointSize = px * (0.8 + fract(ph * 13.0));
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: 'uniform float a; varying float v; void main(){ float m = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5)); gl_FragColor = vec4(1.0, 1.0, 1.0, m * v * a); }' });
+const stars = new THREE.Points(starGeo, starMat); stars.renderOrder = -1; stars.frustumCulled = false; scene.add(stars);
+let nightMode = 0, nArmed = true;                                                    // 夜の光：0月 1暗い 2ランタン（ランダムのときは夜ごとに引き直す）
+const NMODE = [{ hm: 1, sm: 1, lamp: false }, { hm: 0.3, sm: 0.12, lamp: false }, { hm: 0.45, sm: 0.05, lamp: true }];   // 環境光・太陽(月)の倍率、ランタンを点けるか
+let tod = 0, skyP = DAY;                                                               // tod: ゆっくり変化の位相 / skyP: 今の空の状態
+function skyFrame(dt) {
+  const k = +$('bg').value, sky = (k >= 1 && k <= 3) || k === 5;
+  let P;
+  if (k === 5) {
+    if (+$('tm').value === 1) { const d = new Date(); P = palAt(REAL, d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600); }
+    else { tod = (tod + dt * val('ts') / 240) % 1; P = palAt(SLOW, tod); }             // 時間の流れ1で、1周およそ4分
+  } else P = [null, DAY, DUSK, NIGHT][k] || DAY;
+  skyP = P;
+  if (!sky) return;
+  ['top', 'mid', 'hor', 'g0', 'g1'].forEach(n => skyU[n].value.copy(P[n]));
+  starMat.uniforms.a.value = P.st; starMat.uniforms.t.value += dt; stars.visible = P.st > 0.01;
+  cloudU.col.value.copy(P.cl); cloudU.op.value = Math.min(1, P.ca * val('cq')); cloudU.cov.value = val('cv'); cloudU.sc.value = 2.5 / val('cz'); cloudU.t.value += dt * 0.004;
+  cloud.rotation.y += dt * 0.012 * val('cl');
+}
+const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });   // 部屋の床と同じ高さで重なるので手前に出す
+const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), floorMat);
+floorMesh.rotation.x = -Math.PI / 2; floorMesh.receiveShadow = true; scene.add(floorMesh);
+const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMat);
+dome.renderOrder = -2; dome.frustumCulled = false; scene.add(dome);
+const wallMat = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.12 });   // 光が当たらない向きの壁が真っ黒にならないよう、わずかに自発光
+const ceilMat = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, color: '#e8e4dc', emissive: '#e8e4dc', emissiveIntensity: 0.1 });
+const roomFl = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, color: '#6b5b48', emissive: '#6b5b48', emissiveIntensity: 0.1, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 4 });   // 床メッシュ・影用の床より奥へ（床があるときは描かない）
+const room = new THREE.Mesh(new THREE.BufferGeometry(), [wallMat, ceilMat, roomFl]);   // 形は applyBg で箱に合わせて作る（壁・天井・床の順）
+room.frustumCulled = false; scene.add(room);
+const beamMat = new THREE.MeshStandardMaterial({ color: '#5b3d27', roughness: 0.75 }), unitBox = new THREE.BoxGeometry(1, 1, 1);
+// 廊下の奥ほど暗くする：描く点の世界座標zだけで決める（霧のようにカメラからの距離では決めない）。uDk=突き当たりでの暗さ、uZ1=廊下の奥行き
+const corU = { uDk: { value: 0 }, uZ1: { value: 1 } };
+function darkenByDepth(m) {
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, corU);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vDepthZ;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\n#ifdef USE_INSTANCING\n vDepthZ = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).z;\n#else\n vDepthZ = (modelMatrix * vec4(transformed, 1.0)).z;\n#endif');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vDepthZ;\nuniform float uDk, uZ1;')
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor.rgb *= 1.0 - uDk * smoothstep(0.0, uZ1, -vDepthZ);');
+  };
+  m.customProgramCacheKey = () => 'depthDark';
+}
+[wallMat, ceilMat, roomFl, floorMat, beamMat].forEach(darkenByDepth);
+let beams = null;                                          // 真壁の柱・長押・回り縁・幅木（まとめて1回で描く）
+function setMap(m, t) { if (m.map !== t) { m.map = t; m.needsUpdate = true; } }
+function corridorBox() {                                  // 廊下：窓の面から奥へ細長い箱。長さは「m相当」（キャラ身長を1.6mとして換算）
+  const c = S.c, kk = val('rk'); let hw = 0;
+  for (const f of S.F) hw = Math.max(hw, Math.abs(f.pa.x - c.x), Math.abs(f.pb.x - c.x));
+  hw = Math.max(hw, 0.4 * bodyH) * kk;
+  return { hw, L: val('cd') * bodyH / 1.6 };
+}
+// 1面の窓の上下に、床と同じ柄の枠を付ける（画面上でmm）。枠は窓の面に置くので、窓より手前に出たキャラは枠より手前に描かれ、飛び出して見える
+function buildFrame() {
+  if (S.frame) { S.frame.removeFromParent(); S.frame.traverse(o => o.geometry?.dispose()); S.frame = null; }
+  const mm = val('frm'); if (S.N !== 1 || !(mm > 0)) return;
+  const f = S.F[0], u = S.u, t = mm / 10 * u, dz = 0.5 * u, W = f.pb.distanceTo(f.pa), H = f.pc.distanceTo(f.pa), sx = S.fsx || S.r * 8, g = new THREE.Group();
+  [t / 2, H - t / 2].forEach(y => {                       // 下の枠・上の枠（厚みは5mm、窓の面から奥へ）
+    const geo = new THREE.BoxGeometry(W, t, dz), m = new THREE.Mesh(geo, floorMat);
+    m.position.set((f.pa.x + f.pb.x) / 2, f.pa.y + y, f.pa.z - dz / 2);
+    const pos = geo.attributes.position, uv = geo.attributes.uv;   // 柄の細かさは床と同じ（ワールド座標で割り当てる）
+    for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + m.position.x) / sx, (pos.getY(i) + m.position.y + pos.getZ(i)) / sx);
+    g.add(m);
+  });
+  scene.add(g); S.frame = g;
+}
+function applyFloor() {
+  const k = +$('fl').value, u = S.u, c = S.c;
+  floorMesh.visible = k > 0; shadowFloor.visible = k === 0; roomFl.visible = k === 0;                           // 床がある間は影用の透明な床を使わない
+  if (!k) { buildFrame(); return; }
+  const f = FLOOR[k], t = f ? T('fl' + k, () => ctex(f[1], f[1], f[2], 3)) : null, size = S.r * 8;
+  setMap(floorMat, t); floorMat.color.set(f ? '#ffffff' : '#cfcfd4');
+  const cor = +$('bg').value === 7 ? corridorBox() : null, sx = cor ? 2 * cor.hw : size, sz = cor ? cor.L : size;   // 廊下のときは廊下の形に合わせる
+  floorMesh.scale.set(sx, sz, 1); floorMesh.position.set(c.x, 0.2 * u, cor ? -cor.L / 2 : c.z);
+  if (t) t.repeat.set(sx / u / f[0], sz / u / f[0]);
+  S.fsx = sx; buildFrame();
+}
+// 部屋：箱の平面形と相似な多角柱（壁・天井・床）。2・3面は四角い箱とみなして閉じる。k は箱に対する倍率
+function roomGeo(poly, c, y0, y1, k, u) {
+  const P = poly.map(p => V(c.x + (p.x - c.x) * k, 0, c.z + (p.z - c.z) * k)), pos = [], uv = [], q12 = 12 * u;
+  const tri = (a, b, d, ua, ub, ud, out) => {            // 法線が out 側を向くように向きをそろえる
+    if (b.clone().sub(a).cross(d.clone().sub(a)).dot(out) < 0) { [b, d] = [d, b]; [ub, ud] = [ud, ub]; }
+    pos.push(a.x, a.y, a.z, b.x, b.y, b.z, d.x, d.y, d.z); uv.push(...ua, ...ub, ...ud);
+  };
+  const g = new THREE.BufferGeometry(); let run = 0;
+  P.forEach((p, i) => {                                  // 壁
+    const q = P[(i + 1) % P.length], len = p.distanceTo(q), s0 = run / q12, s1 = (run + len) / q12, v1 = (y1 - y0) / q12;
+    const a = V(p.x, y0, p.z), b = V(q.x, y0, q.z), d = V(q.x, y1, q.z), e = V(p.x, y1, p.z), out = V((p.x + q.x) / 2 - c.x, 0, (p.z + q.z) / 2 - c.z);
+    tri(a, b, d, [s0, 0], [s1, 0], [s1, v1], out); tri(a, d, e, [s0, 0], [s1, v1], [s0, v1], out); run += len;
+  });
+  g.addGroup(0, pos.length / 3, 0);
+  [[y1, 1, 1], [y0, -1, 2]].forEach(([y, sg, mi]) => {   // 天井（上向き）・床（下向き）
+    const st = pos.length / 3, o = V(c.x, y, c.z);
+    P.forEach((p, i) => { const q = P[(i + 1) % P.length]; tri(o, V(p.x, y, p.z), V(q.x, y, q.z), [o.x / q12, o.z / q12], [p.x / q12, p.z / q12], [q.x / q12, q.z / q12], V(0, sg, 0)); });
+    g.addGroup(st, pos.length / 3 - st, mi);
+  });
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+  g.userData.P = P;
+  return g;
+}
+// 真壁：壁から出っ張る柱・長押・回り縁・幅木。w は箱の面の幅（大きさの基準）。インスタンス描画なので数十本でも軽い
+function roomBeams(P, c, y0, y1, w) {
+  if (beams) { scene.remove(beams); beams.dispose(); beams = null; }
+  const t = 0.08 * w, d = 0.06 * w, Hr = y1 - y0, up = new THREE.Vector3(0, 1, 0), items = [];   // items: [壁の何番, 壁に沿った位置, 幅, 下, 上, 出っ張り]
+  P.forEach((p, i) => {
+    const q = P[(i + 1) % P.length], L = p.distanceTo(q), n = Math.max(1, Math.round(L / (0.55 * w)));
+    for (let j = 0; j <= n; j++) items.push([i, t / 2 + j * (L - t) / n, t, y0, y1, d]);                  // 柱（両端は角）
+    items.push([i, L / 2, L, y0 + 0.76 * Hr, y0 + 0.76 * Hr + 0.06 * w, d * 0.8]);                         // 長押
+    items.push([i, L / 2, L, y1 - 0.05 * w, y1, d * 0.8]);                                                  // 回り縁
+    items.push([i, L / 2, L, y0, y0 + 0.05 * w, d * 0.8]);                                                  // 幅木
+  });
+  beams = new THREE.InstancedMesh(unitBox, beamMat, items.length);
+  const m = new THREE.Matrix4(), qt = new THREE.Quaternion(), ps = new THREE.Vector3(), sc = new THREE.Vector3();
+  items.forEach(([i, s, wd, ya, yb, dp], k) => {
+    const p = P[i], q = P[(i + 1) % P.length], T = q.clone().sub(p).normalize(), inw = V(-T.z, 0, T.x);
+    if (inw.dot(V(c.x - p.x, 0, c.z - p.z)) < 0) inw.negate();                                             // 部屋の中心側
+    ps.copy(p).addScaledVector(T, s).addScaledVector(inw, dp / 2); ps.y = (ya + yb) / 2;
+    qt.setFromAxisAngle(up, Math.atan2(-T.z, T.x)); sc.set(wd, yb - ya, dp);
+    beams.setMatrixAt(k, m.compose(ps, qt, sc));
+  });
+  beams.instanceMatrix.needsUpdate = true; beams.frustumCulled = false; scene.add(beams);
+  const mids = P.map((p, i) => p.clone().add(P[(i + 1) % P.length]).multiplyScalar(0.5));              // 壁の中点と外向きの向き（手前の壁を隠す判定用）
+  beams.userData = { wall: items.map(it => it[0]), base: beams.instanceMatrix.array.slice(), mids, outs: mids.map(m => V(m.x - c.x, 0, m.z - c.z).normalize()), key: '' };
+}
+// 目から見て壁の外側にあたる（＝手前に来た）壁の柱・長押などは描かない。内側から見える壁だけ残す
+function updateBeams(peW) {
+  if (!beams || !beams.visible) return;
+  const { wall, base, mids, outs } = beams.userData;
+  const hide = mids.map((m, i) => peW.clone().sub(m).setY(0).dot(outs[i]) > 0), key = hide.join();
+  if (key === beams.userData.key) return;
+  beams.userData.key = key;
+  const a = beams.instanceMatrix.array;
+  wall.forEach((wi, k) => {
+    for (let e = 0; e < 16; e++) a[k * 16 + e] = hide[wi] ? (e === 15 ? 1 : 0) : base[k * 16 + e];
+  });
+  beams.instanceMatrix.needsUpdate = true;
+}
+// 立ち位置「前後」の範囲：手前（＋）は、キャラが窓の面にぶつかる手前まで（1面のとき）、奥（−）は廊下の長さまで。窓の大きさや廊下の長さに合わせて毎回計算する
+function stzRange() {
+  if (!S.F) return;
+  const dep = -S.c.z / S.u, Lc = val('cd') * val('ch') / 1.6;           // 中央から窓の面までの距離、廊下の長さ（どちらもcm相当）
+  const mn = -Math.max(0, Lc - dep), mx = S.N === 1 ? dep + 0.4 * val('di') : 15;   // 窓から手前に出るとキャラが切れるので、体の厚みぶん手前で止める
+  $('stz').min = mn.toFixed(1); $('stz').max = mx.toFixed(1);
+}
+function applyBg() {
+  stzRange();
+  const k = +$('bg').value, u = S.u, c = S.c, g0 = 0.2 * u;
+  dome.visible = cloud.visible = stars.visible = (k >= 1 && k <= 3) || k === 5; room.visible = k === 4 || k === 7; if (beams) beams.visible = room.visible;
+  renderer.setClearColor(k === 6 ? 0x000000 : 0x0b0b0e);   // 6: 無し(真っ黒)。0: 暗(ほぼ黒)
+  if (dome.visible) { dome.scale.setScalar(300 * u); dome.position.set(c.x, g0, c.z); cloud.scale.setScalar(290 * u); cloud.position.copy(dome.position); stars.scale.setScalar(280 * u); stars.position.copy(dome.position); }
+  if (room.visible) {
+    const kk = val('rk'), h = val('sh') * u, F = S.F;
+    const poly = S.N >= 4 ? F.map(f => f.pa) : S.N === 1 ? [A(F[0].pa, V(0, 0, -S.w)), F[0].pa, F[0].pb, A(F[0].pb, V(0, 0, -S.w))] : S.N === 3 ? [F[0].pa, F[0].pb, F[2].pa, F[2].pb] : [F[0].pa, F[0].pb, F[1].pb, A(F[0].pa, F[1].pb)];
+    const t = T('plaster', () => ctex(256, 256, (g, R) => { g.fillStyle = '#e4dccb'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 900; i++) { g.fillStyle = R() < .5 ? 'rgba(255,255,255,.10)' : 'rgba(120,100,70,.08)'; g.fillRect(R() * 256, R() * 256, 2 + R() * 6, 1 + R() * 3); } }));   // 漆喰
+    setMap(wallMat, t); if (wallMat.emissiveMap !== t) { wallMat.emissiveMap = t; wallMat.needsUpdate = true; } t.repeat.set(1, 1);
+    const cor = k === 7, cb = cor ? corridorBox() : null;
+    const polyC = cor ? [V(c.x - cb.hw, 0, 0), V(c.x + cb.hw, 0, 0), V(c.x + cb.hw, 0, -cb.L), V(c.x - cb.hw, 0, -cb.L)] : poly;   // 廊下：手前（窓側）から奥へ長い長方形
+    room.geometry.dispose(); room.geometry = roomGeo(polyC, c, g0, g0 + (h - g0) * kk, cor ? 1 : kk, u);
+    room.scale.set(1, 1, 1); room.position.set(0, 0, 0);
+    roomBeams(room.geometry.userData.P, c, g0, g0 + (h - g0) * kk, S.w);
+  }
+  scene.fog = null;
+  corU.uDk.value = k === 7 ? val('cfg') : 0; corU.uZ1.value = k === 7 ? corridorBox().L : 1;   // 奥ほど暗く（カメラではなく廊下の位置で決まるので、横から見ても板に見えない）
+  applyFloor(); placeBack();
+}
+$('rk').oninput = applyBg; $('cd').oninput = applyBg; $('cfg').oninput = applyBg; $('b2s').onchange = placeBack; $('fl').onchange = applyFloor; $('bg').onchange = () => { applyBg(); if (+$('bg').value === 5) { $('lt').value = '5'; light(); } };   // 昼夜変化にしたら光も空に連動
+
+function light() {
+  const u = S.u, h = val('sh') * u, c = S.c.clone(), p = +$('lt').value;
+  shadowFloor.position.set(c.x, 0.2 * u + 0.01 * u, c.z); shadowFloor.scale.set(S.r * 4, S.r * 4, 1);
+  pool.position.set(c.x, 0.2 * u + 0.02 * u, c.z); pool.scale.set(8 * u, 8 * u, 1);
+  sun.visible = p <= 2 || p === 4 || p === 5; spot.visible = false; pool.visible = p === 2; lamp.visible = p === 3 || (p === 5 && (!!lampPos || +$('nl').value >= 2));   // 5: 空に連動（小物のランタンは夜に点く）
+  const tgt = A(c, V(0, bodyH * 0.5, 0));
+  if (p === 0) { hemi.color.set(0xfff2dd); hemi.groundColor.set(0x665544); hemi.intensity = 1.2; sun.color.set(0xffe2b0); sun.intensity = 2.6; sun.position.set(c.x - 0.4 * h, h, c.z + 0.5 * h); }
+  if (p === 1) { hemi.color.set(0x8aa4ff); hemi.groundColor.set(0x1a2038); hemi.intensity = 0.6; sun.color.set(0xaec6ff); sun.intensity = 0.9; sun.position.set(c.x + 0.5 * h, h, c.z + 0.4 * h); }
+  if (p === 2) { hemi.color.set(0x445066); hemi.groundColor.set(0x080808); hemi.intensity = 0.12; sun.color.set(0xffffff); sun.intensity = 3.2; sun.position.set(c.x, 1.2 * h, c.z + 0.4 * h); }
+  if (p === 3) { hemi.color.set(0xffc890); hemi.groundColor.set(0x221108); hemi.intensity = 0.25; lamp.intensity = 2; lamp.position.copy(lampPos || V(c.x, [0.08, 0.5, 0.95][+$('lh').value] * h, c.z)); }
+  if (p === 4) { hemi.color.set(0xffffff); hemi.groundColor.set(0x999999); hemi.intensity = 1.4; sun.color.set(0xffffff); sun.intensity = 2; sun.position.set(c.x + 0.3 * h, 0.8 * h, c.z + 0.8 * h); }
+  if (p === 5) lamp.position.copy(lampPos || V(c.x, [0.08, 0.5, 0.95][+$('lh').value] * h, c.z));
+  sun.target.position.copy(tgt); spot.target.position.copy(tgt);
+  Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h, near: 0.1 * u, far: 4 * h }); sun.shadow.camera.updateProjectionMatrix();
+  spot.shadow.camera.near = 0.1 * u; spot.shadow.camera.far = 4 * h;
+  lamp.shadow.camera.near = 0.05 * u; lamp.shadow.camera.far = 4 * h;
+  lampBase.copy(lamp.position);                          // ゆらぎの基準位置
+}
+$('lt').onchange = light; $('lh').onchange = light; $('nl').onchange = light;
+
+const camP = new THREE.PerspectiveCamera();
+const look = new THREE.Object3D(); scene.add(look);
+const boxG = new THREE.Group(); scene.add(boxG);
+const rig = new THREE.Group(); actG.add(rig);
+let vrm = null, bodyH = 1.5;
+let mmd = null;                                          // MMDモデル: { mesh, helper, clips }。vrm と同時には持たない
+const MMD_SCALE = 0.08;                                  // MMD単位 → m（1単位≒8cm）
+// ---- 奥の人：遠近感用の置物（影なし・固定ポーズ・毎フレームの更新なし。足元に丸い疑似影だけ置く） ----
+let backFile = null, backBusy = 0, backMeta = null;          // backMeta: 絵の大きさ（モデル単位）と足元の位置
+const blobC = document.createElement('canvas'); blobC.width = blobC.height = 64;
+{ const g = blobC.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(0,0,0,.55)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); }
+const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(blobC), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+blob.rotation.x = -Math.PI / 2; blob.visible = false; scene.add(blob);
+const DESAT = 0.8, BACK_FLAG = 'vrm_back_loading';          // DESAT=彩度を落とす割合（0.8なら2割だけ残す）
+const backU = { uBackMul: { value: 1 }, uDesat: { value: DESAT } };   // 奥の人の明るさ・彩度（描画時に掛ける）
+const BACK_TEX = ['map', 'shadeMultiplyTexture', 'emissiveMap', 'normalMap', 'matcapTexture', 'rimMultiplyTexture', 'outlineWidthMultiplyTexture', 'uvAnimationMaskTexture', 'shadingShiftTexture', 'alphaMap'];
+const billMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false });   // 奥の人の絵（光の当たり方は絵に焼いてある）
+billMat.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, backU);
+  sh.fragmentShader = 'uniform float uBackMul, uDesat;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n { float yy = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114)); gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(yy), uDesat) * uBackMul; }');
+};
+billMat.customProgramCacheKey = () => 'backbill';
+const bill = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), billMat); bill.visible = false; blob.renderOrder = 1; bill.renderOrder = 2; scene.add(bill);
+let mixer = null, action = null, playing = false, lay = 1;   // lay: 0自動 1左右 2上下（2面のみ）
+const PHYS_HOLD = 0.5; let vrmHold = 0, vrmTail = false;   // 開始直後に物理を止める秒数
+const motions = [];
+let pm = 0;                                             // pm: 平面の見せ方 0=見える面 1=全面を番号順に並べる 2+k=k番だけ
+let pv = false;                                         // pv: 立体プレビュー表示
+const pscene = new THREE.Scene(), pg = new THREE.Group(); pscene.add(pg);
+const S = {};
+
+function lines(v, color, op) {
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
+}
+
+// ---- 面の生成：外向き法線、pa=左下 pb=右下（外から見て）、pc=左上 ----
+function makeFaces(N, w, g, up) {
+  const P = (a, b) => ({ pa: a, pb: b, pc: A(a, up) }), Z = V(0, 0, 0);
+  if (N === 1) {                                        // 1枚：端末の画面が窓そのもの。奥行きは幅ぶんの四角い箱
+    const a = V(-w / 2, 0, 0), b = V(w / 2, 0, 0);
+    return { F: [P(a, b)], c: V(0, 0, -w / 2), r: w };
+  }
+  if (N === 2) {                                        // 角を手前に向けた2枚
+    const dL = V(-Math.sin(g) * w, 0, -Math.cos(g) * w), dR = V(Math.sin(g) * w, 0, -Math.cos(g) * w);
+    return { F: [P(dL, Z), P(Z, dR)], c: V(0, 0, -w * Math.cos(g)), r: w };
+  }
+  if (N === 3) {                                        // コの字：左・正面・右
+    const a = V(-w / 2, 0, 0), b = V(w / 2, 0, 0), a2 = V(-w / 2, 0, -w), b2 = V(w / 2, 0, -w);
+    return { F: [P(a2, a), P(a, b), P(b, b2)], c: V(0, 0, -w / 2), r: w };
+  }
+  const R = w / (2 * Math.sin(Math.PI / N)), ap = R * Math.cos(Math.PI / N);   // 4面〜：0番が正面の平らな面になる正N角形。1番はその右隣、2番はさらに右…と輪になる
+  const vt = j => { const t = 2 * Math.PI * (j - 0.5) / N; return V(R * Math.sin(t), 0, R * Math.cos(t) - ap); };
+  return { F: Array.from({ length: N }, (_, j) => P(vt(j), vt(j + 1))), c: V(0, 0, -ap), r: R };
+}
+
+function build() {
+  const u = bodyH / val('ch'), w = val('sw') * u, h = val('sh') * u, g = val('an') / 2 * Math.PI / 180, N = +$('nf').value;
+  const up = V(0, h, 0), { F, c, r } = makeFaces(N, w, g, up);
+  Object.assign(S, { u, w, g, F, c, r, N });
+  S.ord = N === 3 ? [1, 0, 2] : N === 2 ? [0, 1] : Array.from({ length: N }, (_, t) => (t - Math.floor((N - 1) / 2) + N) % N);   // 左から右の並び。番号は0=母機、2面は0左・1右、3面は1左・0中央・2右
+  if (pm >= 2 + N) pm = 0; setPmLabel();
+  boxG.clear();
+  const nn = 8, m = Math.max(2, Math.round(nn * h / w)), grid = [], edge = [];
+  const add = (arr, a, b) => arr.push(a.x, a.y, a.z, b.x, b.y, b.z);
+  F.forEach(f => {
+    const e = f.pb.clone().sub(f.pa);
+    for (let i = 0; i <= nn; i++) { const p = A(f.pa, M(e, i / nn)); add(grid, p, A(p, up)); }
+    for (let j = 0; j <= m; j++) add(grid, A(f.pa, M(up, j / m)), A(A(f.pa, e), M(up, j / m)));
+    add(edge, f.pa, f.pb); add(edge, A(f.pa, up), A(f.pb, up)); add(edge, f.pa, A(f.pa, up));
+  });
+  boxG.add(lines(grid, 0x3a4656, 0.8), lines(edge, 0x88aaff, 0.7));
+  // 立体プレビュー：各面の映像をテクスチャにして板として描く（cm単位）。面数が多いほど解像度を下げる
+  S.rt?.forEach(t => t.dispose());
+  const q = Math.min(+$('qa').value || (N <= 2 ? 512 : N <= 4 ? 384 : 256), renderer.capabilities.maxTextureSize), rh = Math.round(q * val('sh') / val('sw'));
+  S.rt = F.map(() => new THREE.WebGLRenderTarget(q, rh, { samples: $('aa').checked ? 4 : 0, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter }));
+  S.cam = F.map((_, i) => S.cam?.[i] || new THREE.PerspectiveCamera());
+  S.quads = F.map((f, i) => quad(f, S.rt[i].texture));
+  S.pl = lines(edge.map(x => x / u), 0x88aaff, 0.8);
+  pg.clear(); pg.add(...S.quads, S.pl); showGrid();
+  place(); placeBack();
+  applyProps();
+  applyFloor(); applyBg();
+  light();
+}
+
+function standPos() {                                    // 立ち位置の調整（左右・前後。小物と同じ向き・単位）
+  rig.position.set(S.c.x + val('stx') * S.u, (0.2 + ($('stc').checked ? val('sty') : 0)) * S.u, S.c.z + val('stz') * S.u);   // 高さ: モーション中の足のめり込み補正用（cm）
+  rig.updateMatrixWorld(true);
+}
+function place() {
+  if (!vrm && !mmd) return;
+  standPos();                                           // ユニットの中央（＋立ち位置の調整分）に立たせる
+  const sb = vrm?.springBoneManager;
+  if (sb) { sb.joints.forEach(j => j.center = rig); sb.setInitState(); sb.reset(); }
+}
+
+// ---- モデル ----
+// 脚のコライダーを足す：スカートなど揺れ物が脚に入り込むのを防ぐ（モデル側の定義は変えない）。大きさは脚の骨の長さに比例
+let legGroups = [];
+function addLegColliders() {
+  legGroups = []; if (!vrm) return;
+  vrm.scene.updateMatrixWorld(true);
+  const hum = vrm.humanoid, wp = o => o.getWorldPosition(V(0, 0, 0));
+  for (const side of ['left', 'right']) {
+    const up = hum.getRawBoneNode(side + 'UpperLeg'), lo = hum.getRawBoneNode(side + 'LowerLeg'), ft = hum.getRawBoneNode(side + 'Foot');
+    if (!up || !lo || !ft) continue;
+    const cols = [];
+    const seg = (bone, child, specs) => {                 // 骨から子の骨へ向かう線上に球を並べる [位置0〜1, 半径/骨の長さ]
+      const len = wp(bone).distanceTo(wp(child)); if (len < 1e-4) return;
+      const dir = bone.worldToLocal(wp(child));
+      for (const [t, r] of specs) {
+        const c = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeSphere({ offset: dir.clone().multiplyScalar(t), radius: r * len }));
+        c.userData.r0 = r * len; bone.add(c); cols.push(c);
+      }
+    };
+    seg(up, lo, [[0.2, 0.2], [0.5, 0.18], [0.8, 0.15]]);   // 太もも
+    seg(lo, ft, [[0.25, 0.15], [0.65, 0.12]]);  // ひざ下
+    if (cols.length) legGroups.push({ colliders: cols });   // コライダーグループは型（colliders の配列を持つ普通のオブジェクト）
+  }
+  applyLegScale(); applyLegColliders();
+}
+function applyLegScale() {
+  const k = val('lcs');
+  for (const g of legGroups) for (const c of g.colliders) c.shape.radius = c.userData.r0 * k;
+}
+function applyLegColliders() {
+  const sb = vrm && vrm.springBoneManager; if (!sb) return;
+  const on = $('lc').checked, head = vrm.humanoid.getRawBoneNode('head');
+  const underHead = b => { for (let o = b; o; o = o.parent) if (o === head) return true; return false; };
+  for (const j of sb.joints) {
+    if (head && underHead(j.bone)) continue;              // 髪など頭の下の揺れ物は対象外（判定を減らす）
+    const base = j.colliderGroups.filter(g => !legGroups.includes(g));   // 配列は他の関節と共有されていることがあるので作り直す
+    j.colliderGroups = on ? [...base, ...legGroups] : base;
+  }
+}
+$('lc').onchange = applyLegColliders; $('lcs').oninput = applyLegScale;
+async function loadModel(file) {
+  st('読み込み中…');
+  const url = URL.createObjectURL(file), loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+  try {
+    const gltf = await loader.loadAsync(url);
+    if (vrm) { rig.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); }
+    unloadMMD();
+    vrm = gltf.userData.vrm; VRMUtils.rotateVRM0(vrm);
+    vrm.scene.traverse(o => { o.frustumCulled = false; o.castShadow = true; });
+    const hold = new THREE.Group(); hold.add(vrm.scene); hold.updateMatrixWorld(true);   // rig（すでに立ち位置にある）や actG（面ごとの変形）の影響を受けない場所で測る
+    const bx = new THREE.Box3().setFromObject(vrm.scene); bodyH = bx.max.y - bx.min.y;
+    const hp = V(0, 0, 0); vrm.humanoid.getNormalizedBoneNode('hips').getWorldPosition(hp);
+    vrm.scene.position.set(-hp.x, -bx.min.y, -hp.z);
+    rig.add(vrm.scene); vrm.scene.updateMatrixWorld(true);
+    addLegColliders();
+    if (vrm.lookAt) vrm.lookAt.target = look;
+    mixer = new THREE.AnimationMixer(vrm.scene); mixer.addEventListener('finished', onFinished); action = null; playing = false;
+    backFile = file; build(); if ($('b2').checked && !backMeta) bakeBack(file);
+    st('読み込み完了。'); URL.revokeObjectURL(url); return true;
+  } catch (err) { st('読み込み失敗: ' + err.message); }
+  URL.revokeObjectURL(url); return false;
+}
+function backDist() {                                    // 中央から奥の壁までの距離（壁の倍率 rk 前）
+  if (S.N === 1) return S.w / 2;
+  if (S.N === 2) return S.w * Math.cos(S.g);
+  let m = 0; for (const f of S.F) m = Math.max(m, S.c.z - Math.min(f.pa.z, f.pb.z)); return m;
+}
+function placeBack() {
+  const on = $('b2').checked && !!backMeta;
+  bill.visible = blob.visible = on; if (!on) return;
+  const u = S.u, c = S.c, q = val('b2z'), cor = +$('bg').value === 7, cb = cor ? corridorBox() : null;
+  const x = cor ? c.x + (+$('b2s').value) * Math.max(0, cb.hw - 0.4 * bodyH) : c.x;      // 廊下：突き当たりの、左右どちらかの壁寄り
+  const z = cor ? -cb.L + 0.45 * bodyH : c.z - q * backDist() * val('rk');
+  const t = cor ? Math.min(1, Math.max(0, -z / cb.L)) : 0; backU.uBackMul.value = 1 - corU.uDk.value * t * t * (3 - 2 * t);   // 床や壁と同じ暗さの式
+  backU.uDesat.value = $('b2i').checked ? DESAT : 0;
+  bill.scale.set(backMeta.w, backMeta.h, 1); bill.position.set(x, 0.2 * u + backMeta.h / 2 - backMeta.foot, z);
+  blob.position.set(x, 0.2 * u + 0.015 * u, z); blob.scale.set(backMeta.h * 0.3, backMeta.h * 0.3, 1);
+}
+// ---- 奥の人：別のキャラのVRMを読み、ポーズをつけて1枚の絵にしたら、モデルは破棄する（メモリも毎フレームの負荷もほぼゼロ） ----
+function shrinkTex(tex, cache, max) {
+  if (cache.has(tex)) return cache.get(tex);
+  const im = tex.image, w = im && (im.width || im.naturalWidth), h = im && (im.height || im.naturalHeight);
+  if (!w || !h || Math.max(w, h) <= max) { cache.set(tex, tex); return tex; }
+  const sc = max / Math.max(w, h), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * sc)); cv.height = Math.max(1, Math.round(h * sc));
+  cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+  const nt = new THREE.CanvasTexture(cv);
+  nt.colorSpace = tex.colorSpace; nt.flipY = tex.flipY; nt.wrapS = tex.wrapS; nt.wrapT = tex.wrapT; nt.anisotropy = tex.anisotropy; nt.channel = tex.channel;
+  nt.offset.copy(tex.offset); nt.repeat.copy(tex.repeat); nt.center.copy(tex.center); nt.rotation = tex.rotation;
+  tex.dispose(); cache.set(tex, nt); return nt;
+}
+function shrinkAll(v, max) {                              // 絵にするだけなので、テクスチャを縮小して読み込みのメモリを抑える
+  const cache = new Map(), seen = new Set();
+  v.scene.traverse(o => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) {
+      if (seen.has(m)) continue; seen.add(m);
+      for (const k of BACK_TEX) { const t = m[k]; if (t && t.isTexture) { const t2 = shrinkTex(t, cache, max); if (t2 !== t) m[k] = t2; } }
+      m.needsUpdate = true;
+    }
+  });
+}
+function poseBack(v) {                                    // ポーズ：自動＝座り→リラックスを名前で探す／選択中のモーション／立ち。無ければ立ち姿
+  const opts = [...$('ms').options].filter(o => +o.value >= 0 && motions[+o.value]), mode = $('bp').value;
+  let o = null;
+  if (mode === 'cur') o = opts.find(x => x.value === $('ms').value);
+  else if (mode === 'auto') o = opts.find(x => /sit|seat|chair|座|腰掛|椅子/i.test(x.dataset.n)) || opts.find(x => /relax|rest|idle|リラ|休/i.test(x.dataset.n));
+  if (o) {                                                // モーションの最後の姿勢を使う（座るなら座り終わった形）
+    const clip = createVRMAnimationClip(motions[+o.value], v), mx = new THREE.AnimationMixer(v.scene);
+    mx.clipAction(clip).play(); mx.setTime(Math.max(0, clip.duration - 1 / 60)); v.update(0);
+    return o.dataset.n;
+  }
+  relax(v); v.update(0); return '立ち';
+}
+function setBack(cv, meta) {
+  billMat.map?.dispose();
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  billMat.map = t; billMat.needsUpdate = true; backMeta = meta; placeBack();
+}
+async function bakeBack(file) {
+  const my = ++backBusy, url = URL.createObjectURL(file), loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+  try { localStorage.setItem(BACK_FLAG, '1'); } catch {}                // 作成中に落ちたら、次回起動時にオフへ戻すための目印
+  st('奥の人を作成中…');
+  let gltf = null, r2 = null;
+  try {
+    gltf = await loader.loadAsync(url);
+    const v = gltf.userData.vrm; VRMUtils.rotateVRM0(v);
+    v.scene.traverse(o => { o.frustumCulled = false; });
+    shrinkAll(v, 1024);
+    const pose = poseBack(v); v.scene.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(v.scene, true), size = bb.getSize(V(0, 0, 0)), ctr = bb.getCenter(V(0, 0, 0));
+    const pad = 0.04 * size.y, w = size.x + 2 * pad, h = size.y + 2 * pad;
+    const H = 640, W = Math.min(1280, Math.max(160, Math.round(H * w / h)));
+    const bs = new THREE.Scene(); bs.add(v.scene, new THREE.HemisphereLight(0xffffff, 0xb8b0a8, 1.2));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(0.4, 0.8, 1).multiplyScalar(5).add(ctr); dl.target.position.copy(ctr); bs.add(dl, dl.target);
+    const cam2 = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.01, 30 + size.z);
+    cam2.position.set(ctr.x, ctr.y, bb.max.z + 10); cam2.lookAt(ctr);
+    r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });   // 絵を作るためだけの一時的な描画器
+    r2.setPixelRatio(1); r2.setSize(W, H, false); r2.setClearColor(0x000000, 0); r2.render(bs, cam2);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(r2.domElement, 0, 0);
+    if (my !== backBusy) return;
+    const meta = { w, h, foot: pad };
+    setBack(cv, meta);
+    cv.toBlob(b => { if (b) { put('backimg', new File([b], 'back.png', { type: 'image/png' })); put('backmeta', meta); } }, 'image/png');   // 次回からは絵だけ読み込む
+    st('奥の人を作りました（ポーズ: ' + pose + '）。モデルは破棄済みです。');
+  } catch (e) { console.warn(e); st('奥の人の作成に失敗: ' + (e?.message || e)); }
+  finally {
+    if (r2) { r2.dispose(); r2.forceContextLoss?.(); }
+    if (gltf) VRMUtils.deepDispose(gltf.scene);
+    URL.revokeObjectURL(url);
+    if (my === backBusy) try { localStorage.removeItem(BACK_FLAG); } catch {}
+  }
+}
+$('b2').onchange = () => { if ($('b2').checked && !backMeta && backFile) bakeBack(backFile); else placeBack(); };
+$('b2z').oninput = placeBack; $('b2i').onchange = placeBack;
+$('fb').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  $('b2').checked = true; keep('backsrc', f); bakeBack(f);
+});
+$('b2r').onclick = async () => {
+  const f = (await get('backsrc')) || backFile;
+  if (f) { $('b2').checked = true; bakeBack(f); } else st('先にモデルを読み込んでください。');
+};
+// 1面：画面（メニューを除いた表示領域）の縦横比に、窓の幅・高さを自動で合わせる。長辺は「面の高さ」スライダー（cm）。
+// 変わったら true（作り直しが要る）
+function fit1() {
+  if (+$('nf').value !== 1) { if ('sw' in OV) { delete OV.sw; delete OV.sh; return true; } return false; }
+  const cw = innerWidth, ch = Math.max(1, innerHeight - $('ui').offsetHeight), a = cw / ch, L = +$('sh').value;
+  const W = a < 1 ? L * a : L, H = a < 1 ? L : L / a;
+  if (OV.sw && Math.abs(OV.sw - W) < 0.01 && Math.abs(OV.sh - H) < 0.01) return false;
+  OV.sw = W; OV.sh = H; return true;
+}
+$('frm').oninput = buildFrame;
+['sw', 'sh', 'ch', 'an'].forEach(id => $(id).oninput = () => { fit1(); build(); });
+$('nf').onchange = () => { fit1(); build(); };
+$('fs1').onclick = async () => {                          // 全画面：メニューを隠してブラウザも全画面にする（非対応の端末ではメニューを隠すだけ）
+  $('ui').style.display = 'none'; $('mn').style.opacity = .3;
+  try { await document.documentElement.requestFullscreen?.(); } catch (e) { console.warn(e); }
+};
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { $('ui').style.display = ''; $('mn').style.opacity = ''; } });
+function showGrid() { const on = $('gr').checked; boxG.visible = on; if (S.pl) S.pl.visible = on; }   // 格子と枠線（平面・立体の両方）
+$('gr').onchange = showGrid;
+$('qa').onchange = $('aa').onchange = build;           // 立体表示の画質（解像度とアンチエイリアス）
+
+// ---- モーション（VRMA） ----
+const au = new Audio(); au.volume = 0.8;
+let actx = null, gainN = null;                         // iOSは audio.volume が効かないので GainNode で音量を決める
+function ensureGain() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = actx.createMediaElementSource(au); gainN = actx.createGain();
+    src.connect(gainN); gainN.connect(actx.destination); au.volume = 1;
+    if (actx.state === 'suspended') actx.resume();
+  } catch (e) { actx = gainN = null; }
+}
+function setVol(v) { if (gainN) gainN.gain.value = v; else au.volume = v; }
+let curSrc = null, defAudio = null, defName = '';
+const motionAudio = {};                                // モーション番号 → { url, name }
+
+// ---- MMD（PMX/PMD + VMD）。第1段階：物理・視線・まばたき・呼吸は無し ----
+function unloadMMD() {
+  if (!mmd) return;
+  if (mmd.helper.objects.has(mmd.mesh)) mmd.helper.remove(mmd.mesh);
+  rig.remove(mmd.mesh);
+  mmd.mesh.geometry.dispose();
+  [].concat(mmd.mesh.material).forEach(m => { m.map?.dispose(); m.dispose(); });
+  mmd = null; action = null; playing = false;
+}
+// ---- MMDの待機ポーズ：動いていないときだけ、腕を下ろしてひじを少し曲げる（VRMの relax の MMD版。指・肩は触らない） ----
+const restPos = b => { const v = new THREE.Vector3(); for (let x = b; x?.isBone; x = x.parent) v.add(x.position); return v; };   // 初期ポーズでの位置（MMD単位）
+function relaxSetup(md) {
+  md.mesh.pose();
+  const bn = n => md.mesh.skeleton.getBoneByName(n), arms = [], hands = [];
+  for (const side of ['左', '右']) {
+    const U = bn(side + '腕'), L = bn(side + 'ひじ'), W = bn(side + '手首'); if (!U || !L || !W) continue;
+    const pu = restPos(U), pl = restPos(L), pw = restPos(W);
+    arms.push({ U, L, qU: U.quaternion.clone(), qL: L.quaternion.clone(), dU: pl.clone().sub(pu).normalize(), dL: pw.clone().sub(pl).normalize() });   // 初期の腕・前腕の向き
+    // 指：曲げる軸は「小指の付け根→人指の付け根」（手の甲の幅の向き）。手のひら側へ倒す符号は、右手なら +軸、左手なら -軸（解剖学的な左右）
+    const ia = bn(side + '人指１'), li = bn(side + '小指１'); if (!ia || !li) continue;
+    const axis = restPos(ia).sub(restPos(li)).normalize().multiplyScalar(side === '右' ? 1 : -1), fingers = [];
+    for (const [jp, en, m] of [['人指', 'Index', 0.7], ['中指', 'Middle', 1], ['薬指', 'Ring', 1.1], ['小指', 'Little', 1.2]]) {
+      const bones = [['１', 0.35], ['２', 0.5], ['３', 0.3]].map(([n, c]) => { const B = bn(side + jp + n); return B && { B, q: B.quaternion.clone(), c }; }).filter(Boolean);
+      if (bones.length) fingers.push({ bones, m, k: fv[(side === '左' ? 'left' : 'right') + en]?.k ?? 1 });
+    }
+    hands.push({ axis, fingers });
+  }
+  md.relax = arms; md.hands = hands;
+}
+function relaxMMD(dt) {
+  const md = mmd; if (!md) return;
+  if (!md.relax) relaxSetup(md);
+  const on = $('mr').checked, a = val('ma') * Math.PI / 180, el = val('el'), k = 1 - Math.exp(-dt * 8);   // 目標へなめらかに寄せる
+  for (const r of md.relax) {
+    let tU = r.qU, tL = r.qL;
+    if (on) {
+      const sgn = Math.sign(r.dU.x) || 1;                // 腕が伸びている側（外側）の向きは骨の位置から決める
+      tU = new THREE.Quaternion().setFromUnitVectors(r.dU, V(sgn * Math.sin(a), -Math.cos(a), 0)).multiply(r.qU);   // 腕を、真下から a 度だけ開いた向きへ
+      const ax = r.dL.clone().cross(V(0, 0, 1));         // 前腕を前（+z）へ倒す軸
+      if (ax.lengthSq() > 1e-6) tL = new THREE.Quaternion().setFromAxisAngle(ax.normalize(), el).multiply(r.qL);
+    }
+    r.U.quaternion.slerp(tU, k); r.L.quaternion.slerp(tL, k);
+  }
+  const hc = val('mh') * ($('mhf').checked ? -1 : 1);     // 指：VRMの握りと同じ比率（根元を弱く、真ん中を強く、先を弱く）。親指は触らない
+  for (const h of md.hands) for (const f of h.fingers) for (const j of f.bones) {
+    const t = on ? new THREE.Quaternion().setFromAxisAngle(h.axis, hc * j.c * f.m * f.k).multiply(j.q) : j.q;
+    j.B.quaternion.slerp(t, k);
+  }
+}
+async function shrinkImg(f, max = 1024) {              // 大きなテクスチャは縮小して渡す（メモリ不足で落ちるのを避ける）。読めない形式（tga等）はそのまま
+  if (!/\.(png|jpe?g|bmp|webp)$/i.test(f.name)) return f;
+  try {
+    const bm = await createImageBitmap(f);
+    if (Math.max(bm.width, bm.height) <= max) { bm.close(); return f; }
+    const sc = max / Math.max(bm.width, bm.height), cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(bm.width * sc)); cv.height = Math.max(1, Math.round(bm.height * sc));
+    cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height); bm.close();
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    return blob ? new File([blob], f.name, { type: 'image/png' }) : f;
+  } catch { return f; }
+}
+addEventListener('error', e => st('エラー: ' + e.message));
+addEventListener('unhandledrejection', e => st('エラー: ' + (e.reason?.message || e.reason)));
+async function loadMMD(files) {
+  const list = [...files], pm = list.find(f => /\.(pmx|pmd)$/i.test(f.name));
+  if (!pm) { st('PMX/PMD が見つかりません。'); return false; }
+  st('読み込み中…');
+  const small = [];
+  for (const f of list) { if (small.length % 5 === 0) { st('テクスチャ準備中… ' + small.length + '/' + list.length); await new Promise(r => setTimeout(r)); } small.push(await shrinkImg(f)); }
+  const map = new Map(small.map(f => [f.name.toLowerCase(), URL.createObjectURL(f)]));   // 名前 → blob URL（テクスチャは名前で引く）
+  const mgr = new THREE.LoadingManager();
+  mgr.onError = u => console.warn('読み込み失敗', u);
+  mgr.setURLModifier(u => { if (u.startsWith('data:')) return u; const k = decodeURIComponent(u.split(/[\\/]/).pop()).toLowerCase(); return map.get(k) || u.replace(/#\.(pmx|pmd)$/i, ''); });
+  try {
+    const mesh = await new MMDLoader(mgr).loadAsync(map.get(pm.name.toLowerCase()) + '#.' + pm.name.split('.').pop().toLowerCase());
+    if (vrm) { rig.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); vrm = null; mixer = null; }
+    unloadMMD();
+    const conv = src => {                                // MMD専用シェーダは影・被写界深度と相性が悪いので、標準の材質に置き換える
+      const g = (k, uk) => src[k] ?? src.uniforms?.[uk]?.value;
+      const map = g('map', 'map') || null;
+      const n = new THREE.MeshStandardMaterial({ color: g('color', 'diffuse')?.clone() || new THREE.Color(1, 1, 1), map,
+        opacity: src.opacity ?? 1, transparent: src.transparent, side: src.side, roughness: 0.9, metalness: 0 });
+      if (map) { n.emissive.setRGB(1, 1, 1); n.emissiveMap = map; n.emissiveIntensity = val('mb'); }   // 絵そのものを少し自発光させて、暗い部屋でも色が沈まないように
+      n.name = src.name; src.dispose(); return n;
+    };
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(conv) : conv(mesh.material);
+    mesh.scale.setScalar(MMD_SCALE);
+    mesh.traverse(o => { o.frustumCulled = false; o.castShadow = true; });
+    mesh.geometry.computeBoundingBox();
+    const b = mesh.geometry.boundingBox, k = MMD_SCALE;
+    bodyH = (b.max.y - b.min.y) * k;
+    mesh.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
+    rig.add(mesh);
+    mmd = { mesh, helper: new MMDAnimationHelper(), clips: new Map() };
+    build();
+    st('MMD読み込み完了。' + (list.length < 2 ? '（テクスチャ無し：zipで選ぶと貼られます）' : ''));
+    return true;
+  } catch (err) { console.error(err); st('MMD読み込み失敗: ' + (err?.message || err)); return false; }
+  finally { setTimeout(() => map.forEach(u => URL.revokeObjectURL(u)), 30000); }   // テクスチャの読み込み完了を待ってから解放
+}
+const sjis = new TextDecoder('shift_jis'), utf8 = new TextDecoder('utf-8', { fatal: true });
+function zipName(n) {                                    // 旧Windows製zipは名前が Shift_JIS のことがある → 文字化けを直す
+  if (!/[\x80-\xff]/.test(n) || /[^\x00-\xff]/.test(n)) return n;
+  const b = Uint8Array.from(n, c => c.charCodeAt(0));
+  try { return utf8.decode(b); } catch { return sjis.decode(b); }
+}
+async function unzipModel(zip) {                         // フォルダ構成は捨てて、ファイル名だけで引く
+  const ent = unzipSync(new Uint8Array(await zip.arrayBuffer()));
+  return Object.entries(ent).filter(([n]) => !n.endsWith('/')).map(([n, d]) => new File([d], zipName(n).split('/').pop()));
+}
+const mgv = () => new THREE.Vector3(0, -98 * val('mg'), 0);          // MMDの標準重力（-9.8×10）の倍率
+$('mg').oninput = () => mmd?.helper.objects.get(mmd.mesh)?.physics?.setGravity(mgv());
+$('mgr').oninput = () => { if (!mmd) return; mmd.clips.clear(); st('接地補正を変更：次の再生から反映'); };   // VRMAもVMDも作り直す（VMDは読み込み済みの元データから）   // VRMA由来のクリップだけ作り直す
+$('mxg').oninput = () => { if (!mmd) return; mmd.clips.clear(); st('足の交差防止を変更：次の再生から反映'); };
+$('mpq').oninput = $('mlc').oninput = () => mmd && applyPhys(mmd);
+$('mb').oninput = () => mmd && [].concat(mmd.mesh.material).forEach(m => { if (m.emissiveMap) m.emissiveIntensity = val('mb'); });
+// ---- モデルのキャッシュ：最近読み込んだモデルを IndexedDB に残し、プルダウンから選び直せる ----
+// 'libidx' = 一覧 [{id,kind,name,size,t}]、'lib:<id>' = File の配列、'cur' = 今使っているモデルの id
+const LIB_MAX = 5;                                      // 種類（VRM / MMD）ごとに残す数。超えたら古いものから消える
+let curId = null;
+const isZip = async f => { const b = new Uint8Array(await f.slice(0, 2).arrayBuffer()); return b[0] === 0x50 && b[1] === 0x4b; };   // 先頭が "PK" ならzip（拡張子は当てにしない）
+const libIdx = async () => (await get('libidx')) || [];
+async function libRefresh() {
+  const idx = await libIdx(), sel = $('ml'); sel.innerHTML = '';
+  if (!idx.some(e => e.id === curId)) sel.add(new Option(idx.length ? '（選んでください）' : '（モデルなし）', ''));
+  idx.forEach(e => sel.add(new Option((e.kind === 'mmd' ? 'MMD: ' : 'VRM: ') + e.name.replace(/\.(vrm|glb|pmx|pmd)$/i, '').slice(0, 16), e.id)));
+  sel.value = idx.some(e => e.id === curId) ? curId : '';
+}
+async function libUse(id) {                              // このモデルを「今のモデル」にして、一覧の先頭へ
+  try {
+    const idx = await libIdx(), e = idx.find(x => x.id === id); if (e) e.t = Date.now();            // 並びは固定、t は「最近使った順」で古いものを消すため
+    await idb('readwrite', s => { s.put(idx, 'libidx'); s.put(id, 'cur'); s.delete('model'); s.delete('mmd'); });   // model/mmd は旧形式の保存
+    curId = id;
+  } catch (e) { fail(e); }
+  libRefresh();
+}
+async function libAdd(kind, fs) {
+  try {
+    const name = (kind === 'mmd' ? fs.find(f => /\.(pmx|pmd)$/i.test(f.name)) : null)?.name || fs[0].name, size = fs.reduce((a, f) => a + f.size, 0);
+    let idx = await libIdx();
+    const dup = idx.find(e => e.kind === kind && e.name === name && e.size === size);   // 同じものは増やさない
+    const id = dup ? dup.id : kind + Date.now().toString(36);
+    if (!dup) {
+      const owned = await Promise.all(fs.map(own));
+      await idb('readwrite', s => s.put(owned, 'lib:' + id));
+      idx = [...idx, { id, kind, name, size, t: Date.now() }];
+      for (let same = idx.filter(e => e.kind === kind); same.length > LIB_MAX; same = idx.filter(e => e.kind === kind)) {   // 超えたら、最近使っていないものから消す
+        const old = same.filter(e => e.id !== id).sort((a, b) => a.t - b.t)[0]; if (!old) break;
+        await idb('readwrite', s => s.delete('lib:' + old.id)); idx = idx.filter(x => x !== old);
+      }
+      await idb('readwrite', s => s.put(idx, 'libidx'));
+    }
+    await libUse(id);
+  } catch (e) { fail(e); }
+}
+async function libDrop(id) {
+  try {
+    const idx = (await libIdx()).filter(x => x.id !== id), cur = await get('cur');
+    await idb('readwrite', s => { s.delete('lib:' + id); s.put(idx, 'libidx'); if (cur === id) s.delete('cur'); });
+    if (curId === id) curId = null;
+  } catch {}
+  libRefresh();
+}
+async function loadLib(id) {
+  const e = (await libIdx()).find(x => x.id === id), fs = e && await get('lib:' + id);
+  if (!fs?.length) { st('キャッシュが見つかりません。'); await libDrop(id); return; }
+  let ok;
+  if (e.kind === 'mmd') ok = await loadMMD(fs);
+  else if (await isZip(fs[0])) { st('壊れたキャッシュ（zip）を破棄しました。'); await libDrop(id); return; }
+  else ok = await loadModel(fs[0]);
+  if (ok) await libUse(id); else libRefresh();
+}
+$('ml').onchange = e => { if (e.target.value) loadLib(e.target.value); };
+function unloadAll() {
+  if (vrm) { rig.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); vrm = null; mixer = null; }
+  unloadMMD(); action = null; playing = false; au.pause(); curSrc = null;
+}
+$('mld').onclick = async () => {                         // 選択中のモデルをキャッシュから削除（使用中なら外す）
+  const id = $('ml').value; if (!id) { st('削除するモデルを選んでください。'); return; }
+  const name = $('ml').selectedOptions[0].textContent, wasCur = id === curId;
+  await libDrop(id);
+  if (wasCur) unloadAll();
+  st('「' + name + '」を削除しました。');
+};
+async function openVRM(file) {                           // 「モデルを選ぶ」から。中身がzipならMMDとして扱う（zipをGLTFとして読むと JSON Parse error "PK" になる）
+  if (await isZip(file)) { st('zipなのでMMDモデルとして読み込みます…'); return openMMD([file]); }
+  if (!(await loadModel(file))) return false;
+  libAdd('vrm', [file]); return true;
+}
+async function openMMD(fs) {
+  try { if (fs.length === 1 && (/\.zip$/i.test(fs[0].name) || await isZip(fs[0]))) { st('zipを展開中…'); fs = await unzipModel(fs[0]); } }
+  catch (err) { st('zipを開けませんでした: ' + (err?.message || err)); return false; }
+  if (!(await loadMMD(fs))) return false;
+  libAdd('mmd', fs); return true;
+}
+$('mf').addEventListener('change', async e => {         // VRM / MMD(zip・pmx+テクスチャ) をまとめて受ける
+  const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
+  const isPm = f => /\.(pmx|pmd)$/i.test(f.name);
+  if (fs.length > 1 && fs.some(isPm)) { await openMMD(fs); return; }    // pmx + テクスチャを複数選んだ場合は1つのモデル
+  for (const f of fs) await (isPm(f) ? openMMD([f]) : openVRM(f));      // それ以外は1ファイルずつ（最後のものが表示される）
+});
+// VRMA → MMDモデル：ヒューマノイドの回転を、MMDの骨に写し替える（IKは使わず、全部FKで）。
+// MMDの骨は初期回転が全部「無し」なので、VRMの正規化ボーンと同じ座標で扱える。モデルの初期ポーズがAポーズなど
+// T字から外れている分は、腕・脚の骨ごとに補正する： 局所回転 = 親の補正⁻¹ × VRMAの回転 × 自分の補正
+function vrmaToMMD(anim, mesh) {
+  mesh.pose();
+  const bn = n => mesh.skeleton.getBoneByName(n);
+  const rest = b => { const v = new THREE.Vector3(); for (let x = b; x?.isBone; x = x.parent) v.add(x.position); return v; };   // 初期ポーズでの位置（MMD単位）
+  const Q = () => new THREE.Quaternion();
+  const corr = (a, b, T) => bn(a) && bn(b) ? Q().setFromUnitVectors(rest(bn(b)).sub(rest(bn(a))).normalize(), T) : Q();
+  const rot = anim.humanoidTracks.rotation, itp = new Map([...rot].map(([k, t]) => [k, t.createInterpolant()]));
+  const q = (k, t) => { const f = itp.get(k); if (!f) return Q(); const a = f.evaluate(t); return new THREE.Quaternion(a[0], a[1], a[2], a[3]); };
+  const hip = t => q('hips', t), up2 = !!bn('上半身2');
+  const defs = [
+    { n: '下半身', f: hip },
+    { n: '上半身', f: t => { const r = hip(t).multiply(q('spine', t)); return up2 ? r : r.multiply(q('chest', t)).multiply(q('upperChest', t)); } },
+    { n: '上半身2', f: t => q('chest', t).multiply(q('upperChest', t)) },
+    { n: '首', f: t => q('neck', t) }, { n: '頭', f: t => q('head', t) },
+  ];
+  for (const [s, v, sg] of [['左', 'left', 1], ['右', 'right', -1]]) {
+    const A = new THREE.Vector3(sg, 0, 0), D = new THREE.Vector3(0, -1, 0);
+    const cs = corr(s + '肩', s + '腕', A), cu = corr(s + '腕', s + 'ひじ', A), cl = corr(s + 'ひじ', s + '手首', A);
+    const gu = corr(s + '足', s + 'ひざ', D), gl = corr(s + 'ひざ', s + '足首', D);
+    defs.push(
+      { n: s + '肩', f: t => q(v + 'Shoulder', t), c: cs }, { n: s + '腕', f: t => q(v + 'UpperArm', t), c: cu, cp: cs },
+      { n: s + 'ひじ', f: t => q(v + 'LowerArm', t), c: cl, cp: cu }, { n: s + '手首', f: t => q(v + 'Hand', t), c: cl, cp: cl },
+      { n: s + '足', f: t => q(v + 'UpperLeg', t), c: gu }, { n: s + 'ひざ', f: t => q(v + 'LowerLeg', t), c: gl, cp: gu },
+      { n: s + '足首', f: t => q(v + 'Foot', t), cp: gl });
+  }
+  const dur = Math.max(anim.duration, 1 / 30), N = Math.ceil(dur * 30 - 1e-3) + 1, times = new Float32Array(N).map((_, i) => Math.min(i / 30, dur));
+  const tracks = [];
+  for (const d of defs) {
+    if (!bn(d.n)) continue;
+    const c = d.c || Q(), cpi = (d.cp || Q()).clone().invert(), vals = new Float32Array(N * 4), prev = Q();
+    for (let i = 0; i < N; i++) {
+      const r = cpi.clone().multiply(d.f(times[i])).multiply(c);
+      if (i && r.dot(prev) < 0) { r.x = -r.x; r.y = -r.y; r.z = -r.z; r.w = -r.w; }      // 補間が逆回りしないよう向きをそろえる
+      prev.copy(r); r.toArray(vals, i * 4);
+    }
+    tracks.push(new THREE.QuaternionKeyframeTrack('.bones[' + d.n + '].quaternion', times, vals));
+  }
+  const th = anim.humanoidTracks.translation.get('hips'), cen = bn('センター'), hb = bn('下半身') || cen;
+  if (th && cen && hb) {                                 // 腰の移動 → センター。体の大きさの比で拡縮
+    const f = th.createInterpolant(), r0 = anim.restHipsPosition, sc = rest(hb).y * MMD_SCALE / (r0?.y || 1) / MMD_SCALE, vals = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const a = f.evaluate(times[i]);
+      vals[i * 3] = cen.position.x + (a[0] - (r0?.x || 0)) * sc; vals[i * 3 + 1] = cen.position.y + (a[1] - (r0?.y || 0)) * sc; vals[i * 3 + 2] = cen.position.z + (a[2] - (r0?.z || 0)) * sc;
+    }
+    tracks.push(new THREE.VectorKeyframeTrack('.bones[センター].position', times, vals));
+  }
+  // 接地補正：座り込みなどで脚（股関節・ひざ・足首）が床面より下に沈む分だけ、センターを持ち上げる（持ち上げるだけ。立ち・歩き・ジャンプには効かない）
+  const gk = val('mgr');
+  if (gk > 0 && cen) try {
+    mesh.updateMatrixWorld(true);
+    const tv = new THREE.Vector3(), wy = b => { b.getWorldPosition(tv); mesh.worldToLocal(tv); return tv.y; };
+    const floor = mesh.geometry.boundingBox?.min.y ?? 0;           // 読み込み時に床へ合わせた、モデルの最下点
+    const legs = [];
+    for (const s of ['左', '右']) { const h = bn(s + '足'), kn = bn(s + 'ひざ'), an = bn(s + '足首'); if (h && kn && an) legs.push([h, kn, an]); }
+    if (legs.length) {
+      const Lh = wy(legs[0][0]) - floor, ya = wy(legs[0][2]) - floor;     // 股関節の高さ／足首の高さ（立ち姿）
+      const rad = [0.08 * Lh * gk, 0.05 * Lh * gk, Math.min(ya, 0.04 * Lh) * gk];   // 太もも・ひざ・足首の床からの最低高さ
+      const ct = tracks.find(t => t.name === '.bones[センター].position');
+      const bind = tracks.map(t => { const m = /^\.bones\[(.+)\]\.(quaternion|position)$/.exec(t.name); return m && bn(m[1]) ? { b: bn(m[1]), p: m[2] === 'position', f: t.createInterpolant() } : null; }).filter(Boolean);
+      if (!ct) bind.push({ b: cen, p: true, f: { evaluate: () => [cen.position.x, cen.position.y, cen.position.z] } });
+      const dy = new Float32Array(N);
+      for (let i = 0; i < N; i++) {
+        for (const x of bind) { const a = x.f.evaluate(times[i]); if (x.p) x.b.position.set(a[0], a[1], a[2]); else x.b.quaternion.set(a[0], a[1], a[2], a[3]); }
+        mesh.updateMatrixWorld(true);
+        let need = 0;
+        for (const l of legs) for (let j = 0; j < 3; j++) need = Math.max(need, rad[j] - (wy(l[j]) - floor));
+        dy[i] = need;
+      }
+      mesh.pose();
+      const mx = new Float32Array(N), sm = new Float32Array(N);       // 前後2フレームで最大を取ってから平均（急にカクつかず、必ず必要量以上になる）
+      for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) m = Math.max(m, dy[j]); mx[i] = m; }
+      for (let i = 0; i < N; i++) { let t = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) { t += mx[j]; c++; } sm[i] = t / c; }
+      limitDecay(sm, i => ct ? ct.values[i * 3 + 1] : 0);
+      const top = Math.max(...sm);
+      if (top > 1e-4) {
+        let tr = ct;
+        if (!tr) { const v = new Float32Array(N * 3); for (let i = 0; i < N; i++) v.set([cen.position.x, cen.position.y, cen.position.z], i * 3); tr = new THREE.VectorKeyframeTrack('.bones[センター].position', times, v); tracks.push(tr); }
+        for (let i = 0; i < N; i++) tr.values[i * 3 + 1] += sm[i];
+        st('接地補正：最大 ' + (top * MMD_SCALE * 100).toFixed(1) + 'cm 持ち上げ');
+      }
+    }
+  } catch (e) { console.warn('接地補正', e); } finally { mesh.pose(); }
+  return new THREE.AnimationClip('vrma', dur, tracks);
+}
+let ammoP = null, ammoDead = false;                                        // ammo.js（MMDの物理）は、使うときに初めて読み込む
+function loadAmmo() {
+  return ammoP ??= new Promise((ok, ng) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/ammo.wasm.js';
+    sc.onload = () => Ammo().then(L => { window.Ammo = L; ok(); }, ng);
+    sc.onerror = () => ng(new Error('ammo.js を読み込めません'));
+    document.head.appendChild(sc);
+  }).catch(e => { ammoP = null; throw e; });
+}
+// 補正量が、元のセンターの上昇量の半分（＋わずか）より速く減らないようにする。起き上がりの途中で上昇が止まったり沈んだりするのを防ぐ
+function limitDecay(sm, rawY) {
+  let prev = rawY(0);
+  for (let i = 1; i < sm.length; i++) {
+    const y = rawY(i), lim = 0.5 * Math.max(0, y - prev) + 0.03;
+    sm[i] = Math.max(sm[i], sm[i - 1] - lim); prev = y;
+  }
+}
+
+// ---- VMDのIKオン/オフ指定（three.js の読み込みは無視するので、ここで読む） ----
+function parseVmdIk(buf) {
+  try {
+    const dv = new DataView(buf), n = dv.byteLength;
+    let o = 50;
+    const skip = rec => { if (o + 4 > n) throw 0; o += 4 + dv.getUint32(o, true) * rec; };
+    skip(111); skip(23); skip(61); skip(28); skip(9);        // ボーン・モーフ・カメラ・照明・影
+    if (o + 4 > n) return null;
+    const cnt = dv.getUint32(o, true); o += 4;
+    const dec = new TextDecoder('shift_jis'), nul = String.fromCharCode(0), out = [];
+    for (let i = 0; i < cnt; i++) {
+      if (o + 9 > n) break;
+      const fr = dv.getUint32(o, true), k = dv.getUint32(o + 5, true); o += 9;
+      const m = new Map();
+      for (let j = 0; j < k && o + 21 <= n; j++) { m.set(dec.decode(new Uint8Array(buf, o, 20)).split(nul)[0], dv.getUint8(o + 20) !== 0); o += 21; }
+      out.push({ fr, st: m });
+    }
+    out.sort((a, b) => a.fr - b.fr);
+    return out.length ? out : null;
+  } catch (e) { return null; }
+}
+function ikOffAt(frames, fr) {                                // フレームfr時点での、IKごとのオン(true)/オフ(false)
+  const s = new Map();
+  for (const f of frames) { if (f.fr > fr + 1e-3) break; for (const [k, v] of f.st) s.set(k, v); }
+  return s;
+}
+function setupIk(md, m) {                                     // 再生するモーションのIK指定を、IKソルバーに結びつける
+  const sv = md.helper.objects.get(md.mesh)?.ikSolver;
+  if (sv && !sv._lf) { const u0 = sv.update.bind(sv); sv._lf = 1; sv.update = (...a) => { const r = u0(...a); try { legFix(md); } catch (e) { if (!md.lfErr) { md.lfErr = 1; console.warn('ひざの交差防止', e); } } return r; }; }   // IKを解いた直後（付与・物理の前）に脚を補正する
+  if (sv && md.ikSv !== sv) { md.ikSv = sv; md.ikAll = sv.iks.slice(); md.ikNames = md.ikAll.map(k => md.mesh.skeleton.bones[k.target].name); }
+  md.ikCur = m.vmd ? (md.ikf?.get(m.vmd) || null) : null;
+}
+function applyIk(dt) {                                        // 毎フレーム、今の再生位置でオンのIKだけをソルバーに渡す
+  const md = mmd, sv = md && md.helper.objects.get(md.mesh)?.ikSolver;
+  if (!sv || !md.ikAll) return;
+  if (!md.ikCur || !action) { if (sv.iks !== md.ikAll) sv.iks = md.ikAll; return; }
+  const s = ikOffAt(md.ikCur, (action.time + (action.paused ? 0 : dt)) * 30);
+  sv.iks = md.ikAll.filter((k, i) => s.get(md.ikNames[i]) !== false);
+}
+
+// ---- VMDの接地補正：モデルの脚の長さがモーションの想定と違って体が床下に入る分だけ、センターを持ち上げる ----
+function groundFixVmd(raw, mesh, ikf) {
+  const gk = val('mgr'); if (!(gk > 0)) return raw;
+  const bn = n => mesh.skeleton.getBoneByName(n), cen = bn('センター'), legs = [];
+  for (const s of ['左', '右']) { const h = bn(s + '足'), kn = bn(s + 'ひざ'), an = bn(s + '足首'); if (h && kn && an) legs.push([h, kn, an]); }
+  if (!cen || !legs.length) return raw;
+  try {
+    mesh.pose(); mesh.updateMatrixWorld(true);
+    const tv = new THREE.Vector3(), wy = b => { b.getWorldPosition(tv); mesh.worldToLocal(tv); return tv.y; };
+    const floor = mesh.geometry.boundingBox?.min.y ?? 0;
+    const Lh = wy(legs[0][0]) - floor, ya = wy(legs[0][2]) - floor;
+    const rad = [0.08 * Lh * gk, 0.05 * Lh * gk, Math.min(ya, 0.04 * Lh) * gk];
+    const N = Math.ceil(raw.duration * 30 - 1e-3) + 1, times = new Float32Array(N);
+    for (let i = 0; i < N; i++) times[i] = Math.min(i / 30, raw.duration);
+    const bind = []; let ct = null;
+    for (const t of raw.tracks) {
+      if (!t.name.startsWith('.bones[')) continue;
+      const j = t.name.indexOf('].'); if (j < 0) continue;
+      const b = bn(t.name.slice(7, j)); if (!b) continue;
+      const p = t.name.slice(j + 2) === 'position';
+      if (p && b === cen) ct = t;
+      bind.push({ b, p, f: t.createInterpolant() });
+    }
+    const dy = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      for (const x of bind) { const a = x.f.evaluate(times[i]); if (x.p) x.b.position.set(a[0], a[1], a[2]); else x.b.quaternion.set(a[0], a[1], a[2], a[3]); }
+      mesh.updateMatrixWorld(true);
+      const fk = ikf && ikOffAt(ikf, i).get('左足ＩＫ') === false;   // 足のIKが切れている間は、ひざ・足首もFKで決まる。IKが効いている間は股関節だけ見る
+      let need = 0;
+      for (const l of legs) for (let j = 0; j < (fk ? 3 : 1); j++) need = Math.max(need, rad[j] - (wy(l[j]) - floor));
+      dy[i] = need;
+    }
+    mesh.pose();
+    const mx = new Float32Array(N), sm = new Float32Array(N);       // 前後2フレームで最大を取ってから平均（急にカクつかず、必ず必要量以上になる）
+    for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) m = Math.max(m, dy[j]); mx[i] = m; }
+    for (let i = 0; i < N; i++) { let t = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) { t += mx[j]; c++; } sm[i] = t / c; }
+    const cf0 = ct ? ct.createInterpolant() : null;
+    limitDecay(sm, i => cf0 ? cf0.evaluate(times[i])[1] : 0);
+    const top = Math.max(...sm);
+    if (top <= 1e-4) return raw;
+    const cf = ct ? ct.createInterpolant() : null, vals = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const a = cf ? cf.evaluate(times[i]) : [cen.position.x, cen.position.y, cen.position.z];
+      vals[i * 3] = a[0]; vals[i * 3 + 1] = a[1] + sm[i]; vals[i * 3 + 2] = a[2];
+    }
+    const tracks = raw.tracks.filter(t => t !== ct);
+    tracks.push(new THREE.VectorKeyframeTrack(ct ? ct.name : '.bones[センター].position', times, vals));
+    st('接地補正：最大 ' + (top * MMD_SCALE * 100).toFixed(1) + 'cm 持ち上げ');
+    return new THREE.AnimationClip(raw.name, raw.duration, tracks);
+  } catch (e) { console.warn('接地補正(VMD)', e); return raw; } finally { mesh.pose(); }
+}
+
+// ---- VMDの足の交差防止：足ＩＫの左右の間隔が狭すぎる／左右が入れ替わるフレームだけ、足ＩＫを左右へ押し広げる（読み込み時に1回だけ焼き直す） ----
+function crossFixVmd(raw, mesh, ikf) {
+  const ks = val('mxg'); if (!(ks > 0)) return raw;
+  const bn = n => mesh.skeleton.getBoneByName(n), iL = bn('左足ＩＫ'), iR = bn('右足ＩＫ'), hL = bn('左足'), hR = bn('右足');
+  if (!iL || !iR || !hL || !hR) return raw;
+  try {
+    mesh.pose(); mesh.updateMatrixWorld(true);
+    const tv = new THREE.Vector3(), mp = b => { b.getWorldPosition(tv); return mesh.worldToLocal(tv).clone(); };
+    const ax0 = mp(hL).sub(mp(hR)).normalize(), gap0 = mp(iL).sub(mp(iR)).dot(ax0);      // 立ち姿での、足ＩＫの左右の間隔
+    if (!(gap0 > 1e-6)) return raw;
+    const minGap = gap0 * ks;
+    const N = Math.ceil(raw.duration * 30 - 1e-3) + 1, times = new Float32Array(N);
+    for (let i = 0; i < N; i++) times[i] = Math.min(i / 30, raw.duration);
+    const bind = [];
+    for (const t of raw.tracks) {
+      if (!t.name.startsWith('.bones[')) continue;
+      const j = t.name.indexOf('].'); if (j < 0) continue;
+      const b = bn(t.name.slice(7, j)); if (!b) continue;
+      bind.push({ b, p: t.name.slice(j + 2) === 'position', f: t.createInterpolant() });
+    }
+    const pose = i => {
+      for (const x of bind) { const a = x.f.evaluate(times[i]); if (x.p) x.b.position.set(a[0], a[1], a[2]); else x.b.quaternion.set(a[0], a[1], a[2], a[3]); }
+      mesh.updateMatrixWorld(true);
+    };
+    const ikOn = i => !ikf || (() => { const o = ikOffAt(ikf, i); return o.get('左足ＩＫ') !== false && o.get('右足ＩＫ') !== false; })();
+    const dfc = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      if (!ikOn(i)) continue;                                  // IKが切れている間は、足はFKで決まるので触らない
+      pose(i);
+      const ax = mp(hL).sub(mp(hR)).normalize();
+      dfc[i] = Math.max(0, minGap - mp(iL).sub(mp(iR)).dot(ax));
+    }
+    const mx = new Float32Array(N), sm = new Float32Array(N);       // 前後2フレームで最大を取ってから平均（急にカクつかず、必要量以上になる）
+    for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) m = Math.max(m, dfc[j]); mx[i] = m; }
+    for (let i = 0; i < N; i++) { let t = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) { t += mx[j]; c++; } sm[i] = ikOn(i) ? t / c : 0; }
+    const top = Math.max(...sm);
+    if (top <= 1e-4) return raw;
+    const vL = new Float32Array(N * 3), vR = new Float32Array(N * 3), push = (b, e, ax, sg) => {
+      const w = mesh.localToWorld(mp(b).addScaledVector(ax, sg * e / 2));
+      return b.parent.worldToLocal(w).toArray();
+    };
+    for (let i = 0; i < N; i++) {
+      pose(i);
+      let l = iL.position.toArray(), r = iR.position.toArray();
+      if (sm[i] > 1e-6) {
+        const ax = mp(hL).sub(mp(hR)).normalize();
+        l = push(iL, sm[i], ax, 1); r = push(iR, sm[i], ax, -1);
+      }
+      vL.set(l, i * 3); vR.set(r, i * 3);
+    }
+    const nL = '.bones[' + iL.name + '].position', nR = '.bones[' + iR.name + '].position';
+    const tracks = raw.tracks.filter(t => t.name !== nL && t.name !== nR);
+    tracks.push(new THREE.VectorKeyframeTrack(nL, times, vL), new THREE.VectorKeyframeTrack(nR, times, vR));
+    st('足の交差防止：最大 ' + (top * MMD_SCALE * 100).toFixed(1) + 'cm 押し広げ');
+    return new THREE.AnimationClip(raw.name, raw.duration, tracks);
+  } catch (e) { console.warn('足の交差防止(VMD)', e); return raw; } finally { mesh.pose(); }
+}
+
+// ---- ひざの交差防止（IK後）：左右の脚を「太もも＋すね」のカプセルで見て、重なる分だけひざを左右の外向きに押し広げる ----
+// 脚全体を「股関節→足首」の線のまわりに回すだけなので、足首はIKの目標のまま動かず、ひざだけが外へ出る。押す向きは常に「左は外・右も外」。
+const _s1 = new THREE.Vector3(), _s2 = new THREE.Vector3(), _s3 = new THREE.Vector3();
+function segDist(p1, q1, p2, q2) {                       // 線分どうしの最短距離
+  const cl = THREE.MathUtils.clamp, d1 = _s1.subVectors(q1, p1), d2 = _s2.subVectors(q2, p2), r = _s3.subVectors(p1, p2);
+  const a = d1.dot(d1), e = d2.dot(d2), f = d2.dot(r); let s, t;
+  if (a < 1e-12 && e < 1e-12) return r.length();
+  if (a < 1e-12) { s = 0; t = cl(f / e, 0, 1); }
+  else {
+    const c = d1.dot(r);
+    if (e < 1e-12) { t = 0; s = cl(-c / a, 0, 1); }
+    else {
+      const b = d1.dot(d2), den = a * e - b * b;
+      s = den > 1e-12 ? cl((b * f - c * e) / den, 0, 1) : 0; t = (b * s + f) / e;
+      if (t < 0) { t = 0; s = cl(-c / a, 0, 1); } else if (t > 1) { t = 1; s = cl((b - c) / a, 0, 1); }
+    }
+  }
+  return r.copy(p1).addScaledVector(d1, s).sub(p2).addScaledVector(d2, -t).length();
+}
+function lfSetup(md) {
+  const mesh = md.mesh, bn = n => mesh.skeleton.getBoneByName(n), ch = s => [bn(s + '足'), bn(s + 'ひざ'), bn(s + '足首')];
+  const L = ch('左'), R = ch('右'); if ([...L, ...R].some(b => !b)) return md.lf = false;
+  const bp = b => new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(mesh.skeleton.boneInverses[mesh.skeleton.bones.indexOf(b)]).invert());   // 初期ポーズでの位置（骨はいじらない）
+  const [hL, kL, aL, hR, kR, aR] = [...L, ...R].map(bp);
+  const len = hL.distanceTo(kL), d = Math.min(segDist(hL, kL, hR, kR), segDist(hL, kL, kR, aR), segDist(kL, aL, hR, kR), segDist(kL, aL, kR, aR));
+  md.lf = { L, R, rho0: d / len, a: [0, 0] };               // 立ち姿での脚どうしの距離（太ももの長さ比）：これより詰めさせない
+}
+function lfAngle(h, k, an, o, gain) {                    // ひざを、股関節→足首の線のまわりに回して、向きoへ gain だけ動かすのに必要な角度
+  const ax = an.clone().sub(h), al = ax.length(); if (al < 1e-6) return 0; ax.divideScalar(al);
+  const kv = k.clone().sub(h), kp = kv.clone().addScaledVector(ax, -ax.dot(kv)), rho = kp.length(); if (rho < 1e-4) return 0;   // 脚が伸び切っていれば動かせない
+  const u = kp.divideScalar(rho), w = new THREE.Vector3().crossVectors(ax, u), ou = o.dot(u), ow = o.dot(w), R = Math.hypot(ou, ow); if (R < 0.7) return 0;   // 股関節→足首の線が横向きに近い（左右軸から45°以内）と、回してもひざは左右に動かない（回し過ぎて胴体に刺さる）ので補正しない
+  const p0 = Math.atan2(ow, ou), tt = Math.cos(p0) + gain / (rho * R), wr = x => Math.atan2(Math.sin(x), Math.cos(x));
+  let phi; if (tt >= 1) phi = p0; else { const dd = Math.acos(Math.max(-1, tt)), c1 = wr(p0 + dd), c2 = wr(p0 - dd); phi = Math.abs(c1) < Math.abs(c2) ? c1 : c2; }
+  const lim = Math.min(0.9, 1.2 * gain / rho);          // 必要な移動量を少し超える程度までしか回さない
+  return THREE.MathUtils.clamp(phi, -lim, lim);
+}
+function lfRot(ch, phi) {                                // 脚全体を股関節→足首の線のまわりに回す（足首の向きはそのまま保つ）
+  const [hp, , an] = ch, P = b => b.getWorldPosition(new THREE.Vector3()), ax = P(an).sub(P(hp)).normalize();
+  const qA = an.getWorldQuaternion(new THREE.Quaternion()), qT = hp.getWorldQuaternion(new THREE.Quaternion()), pq = new THREE.Quaternion();
+  hp.quaternion.copy(hp.parent.getWorldQuaternion(pq).invert().multiply(new THREE.Quaternion().setFromAxisAngle(ax, phi).multiply(qT)));
+  hp.updateMatrixWorld(true);
+  an.quaternion.copy(an.parent.getWorldQuaternion(pq).invert().multiply(qA)); an.updateMatrixWorld(true);
+}
+function legFix(md) {
+  const ks = val('mkc'); if (!(ks > 0)) { if (md.lf) md.lf.a = [0, 0]; return; }
+  if (md.lf === undefined) lfSetup(md); const lf = md.lf; if (!lf) return;
+  md.mesh.updateMatrixWorld(true);
+  const P = b => b.getWorldPosition(new THREE.Vector3()), [hL, kL, aL] = lf.L.map(P), [hR, kR, aR] = lf.R.map(P);
+  const lat = hL.clone().sub(hR).normalize(), tl = hL.distanceTo(kL), sl = kL.distanceTo(aL), tr = hR.distanceTo(kR), sr = kR.distanceTo(aR);
+  const cap = Math.min(segDist(hL, kL, hR, kR), segDist(hL, kL, kR, aR), segDist(kL, aL, hR, kR), segDist(kL, aL, kR, aR));   // 脚どうしの最短距離（中心線どうし）
+  const thr = Math.min(ks * 0.17 * (tl + tr), 0.8 * lf.rho0 * (tl + tr) / 2);          // これより近づいたら押す（太さ基準、ただし立ち姿の距離の8割まで）
+  const need = Math.max(0, thr - Math.min(cap, kL.clone().sub(kR).dot(lat)));       // ひざの左右が入れ替わっていれば、その分も上乗せ
+  const dt = md.lfdt || 0.016, tg = [need > 1e-5 ? lfAngle(hL, kL, aL, lat, need / 2) : 0, need > 1e-5 ? lfAngle(hR, kR, aR, lat.clone().negate(), need / 2) : 0];
+  for (let i = 0; i < 2; i++) {                          // 押すときは素早く、戻すときはゆっくり
+    const k = Math.abs(tg[i]) > Math.abs(lf.a[i]) ? 40 : 10; lf.a[i] += (tg[i] - lf.a[i]) * (1 - Math.exp(-dt * k));
+    if (Math.abs(lf.a[i]) < 1e-4) lf.a[i] = 0;
+  }
+  if (lf.a[0]) lfRot(lf.L, lf.a[0]);
+  if (lf.a[1]) lfRot(lf.R, lf.a[1]);
+  if (lf.a[0] || lf.a[1]) md.mesh.updateMatrixWorld(true);
+}
+
+// ---- MMD物理の調整：①物理の刻みを細かく ②反発係数を0に ③足のコライダーを太らせる（スカートが足を突き抜けて震えるのを抑える） ----
+// 物理は「スケール1・親なし」の空間で計算される（MMDPhysics.update と同じ変換）。reset や手動の更新もその空間で行う
+function unitScale(mesh, fn) {
+  const parent = mesh.parent, sc = mesh.scale.clone();
+  mesh.parent = null; mesh.scale.set(1, 1, 1); mesh.updateMatrixWorld(true);
+  try { fn(); } finally { mesh.parent = parent; mesh.scale.copy(sc); mesh.updateMatrixWorld(true); }
+}
+// 干渉しない基本姿勢（モデルの初期ポーズ）で物理を落ち着かせ、そこから0フレーム目の姿勢へ物理計算の中で少しずつ移す（画面には出さない）。
+// 0フレーム目で腕や足がスカートにめり込んでいても、いきなり押し出されて暴れるのを防ぐ
+const PHYS_BLEND = 40;                                     // 移行にかける物理ステップ数（1/60秒刻み）
+const LIMB_RE = /腕|ひじ|手|指|足|ひざ|つま先|ＩＫ|IK/;     // 移行させる骨（腕・足）。腰や上半身などは最初から0フレーム目の位置に置く（全体の位置やむきが大きくずれていても、スカートを振り回さないため）
+// 剛体の速度に上限をかけ、干渉して押し出されても吹き飛ばないようにする（上限は高めで、普段の揺れには影響しない）
+$('pvs').oninput = () => $('pvt').textContent = $('pvs').value;   // 並進の上限（MMD単位/秒）。回転の上限はその0.4倍（rad/秒）
+function capPhysVelocity(md) {
+  const ph = md.helper.objects.get(md.mesh)?.physics; if (!ph || ph._vcap || !window.Ammo) return;
+  ph._vcap = true; ph._vacc = 0;
+  const orig = ph._stepSimulation.bind(ph), tmp = new Ammo.btVector3(0, 0, 0);
+  const dyn = () => ph.bodies.filter(rb => rb.params.type !== 0);
+  let list = null;
+  const clamp = (v, max, set) => {
+    const x = v.x(), y = v.y(), z = v.z(), l2 = x * x + y * y + z * z;
+    if (l2 > max * max) { const k = max / Math.sqrt(l2); tmp.setValue(x * k, y * k, z * k); set(tmp); }
+  };
+  ph._stepSimulation = function (delta) {
+    if (!$('pv').checked) { this._vacc = 0; return orig(delta); }   // オフのときは元の処理
+    list ??= dyn();
+    const vmax = val('pvs'), wmax = vmax * 0.4;
+    const u = this.unitStep; this._vacc += delta;
+    let n = Math.floor(this._vacc / u + 1e-6); if (n > this.maxStepNum) n = this.maxStepNum;
+    this._vacc = Math.min(Math.max(this._vacc - n * u, 0), u);
+    for (let i = 0; i < n; i++) {                           // 1ステップずつ進めて、そのたびに速度を抑える
+      orig(u);
+      for (const rb of list) { const b = rb.body; clamp(b.getLinearVelocity(), vmax, v => b.setLinearVelocity(v)); clamp(b.getAngularVelocity(), wmax, v => b.setAngularVelocity(v)); }
+    }
+  };
+}
+function physBlendIn(md) {
+  const h = md.helper, ph = h.objects.get(md.mesh)?.physics; if (!ph || !window.Ammo) return false;
+  const mesh = md.mesh, bones = mesh.skeleton.bones, snap = () => bones.map(b => ({ p: b.position.clone(), q: b.quaternion.clone() }));
+  const free = new Set(); for (const rb of ph.bodies) if (rb.params.type !== 0 && rb.params.boneIndex >= 0) free.add(rb.params.boneIndex);   // 物理で動く骨は補間しない
+  h.enable('physics', false);                              // 0フレーム目の姿勢を作る間は物理を進めない
+  try { if (md.ikCur) applyIk(0); h._animateMesh(mesh, 0); } finally { h.enable('physics', true); }
+  const tgt = snap();                                      // 0フレーム目の姿勢
+  mesh.pose(); const rest = snap();                        // モデルの初期ポーズ
+  const limb = bones.map(b => LIMB_RE.test(b.name));
+  const put = e => {                                       // 腕・足は初期ポーズ→0フレーム目をeで補間、他は常に0フレーム目
+    for (let i = 0; i < bones.length; i++) {
+      if (free.has(i)) continue;
+      if (!limb[i]) { bones[i].position.copy(tgt[i].p); bones[i].quaternion.copy(tgt[i].q); continue; }
+      bones[i].position.lerpVectors(rest[i].p, tgt[i].p, e);
+      bones[i].quaternion.slerpQuaternions(rest[i].q, tgt[i].q, e);
+    }
+    mesh.updateMatrixWorld(true);
+  };
+  unitScale(mesh, () => {
+    put(0); ph.reset(); ph.warmup(60);                     // 腕・足が干渉しない姿勢で、腰の位置に合わせて物理を落ち着かせる
+    for (let k = 1; k <= PHYS_BLEND; k++) { const t = k / PHYS_BLEND; put(t * t * (3 - 2 * t)); ph.update(1 / 60); }
+  });
+  return true;
+}
+function applyPhys(md, init) {
+  const ph = md.helper.objects.get(md.mesh)?.physics; if (!ph || !window.Ammo) return;
+  try {
+    ph.unitStep = 1 / (65 * val('mpq'));                    // 細かいほど突き抜けにくいが重い（実行中でも変えられる）
+    const k = val('mlc'), bones = md.mesh.skeleton.bones, v = new Ammo.btVector3(k, k, k);
+    for (const rb of ph.bodies) {
+      rb.body.setRestitution(0);                            // 跳ね返りをなくす
+      const p = rb.params;
+      if (p.type === 0 && p.boneIndex >= 0 && /足|ひざ/.test(bones[p.boneIndex].name)) rb.body.getCollisionShape().setLocalScaling(v);   // ボーン追従の足の剛体だけ
+    }
+    Ammo.destroy(v);
+    if (init && k !== 1) { ph.reset(); ph.warmup(30); }     // 太らせた状態で物理を初期化し直す
+  } catch (e) { if (!md.physErr) { md.physErr = 1; console.warn('物理の調整', e); } }
+}
+
+async function playMMD(i, cont) {
+  if (!mmd) { st('VMDはMMDモデル用です。先にMMDモデルを選んでください。'); return; }
+  const m = motions[i]; if (!m) return;
+  const md = mmd; let clip = md.clips.get(m.vmd || m);
+  if (!clip && !m.vmd) {
+    try { clip = vrmaToMMD(m, md.mesh); md.clips.set(m, clip); } catch (e) { console.error(e); st('VRMAの変換失敗: ' + (e?.message || e)); return; }
+  }
+  if (!clip) {
+    let raw = md.raw?.get(m.vmd);                              // 読み込んだままのクリップとIK指定（接地補正のやり直し用に残す）
+    if (!raw) {
+      const url = URL.createObjectURL(m.vmd);
+      // VMD変換の基準は「変換時点の骨の位置」なので、読み込み直後（変換の直前）に初期ポーズへ戻す
+      try { const L = new MMDLoader(), c = await new Promise((ok, ng) => L.loadVMD(url, vmd => { try { md.mesh.pose(); ok(L.animationBuilder.build(vmd, md.mesh)); } catch (e) { ng(e); } }, undefined, ng)); raw = { clip: c, ikf: parseVmdIk(await m.vmd.arrayBuffer()) }; (md.raw ??= new Map()).set(m.vmd, raw); }
+      catch (e) { st('VMD読み込み失敗: ' + (e?.message || e)); return; }
+      finally { URL.revokeObjectURL(url); }
+      if (mmd !== md) return;
+    }
+    (md.ikf ??= new Map()).set(m.vmd, raw.ikf);
+    clip = groundFixVmd(crossFixVmd(raw.clip, md.mesh, raw.ikf), md.mesh, raw.ikf); md.clips.set(m.vmd, clip);
+  }
+  const h = md.helper;
+  const held = !playing && !!action && cur !== i && h.objects.has(md.mesh);   // 前のモーションが終わって最後の姿勢で止まっている（同じモーションの再生は最初からやり直す）
+  if ((cont && playing || held) && action && h.objects.has(md.mesh)) {   // 続けて再生：物理も姿勢も途切れさせず、今の姿勢からつなぐ（立ち姿に戻さない）
+    const mx = h.objects.get(md.mesh).mixer, prev = action;
+    h.enable('ik', !!m.vmd); setupIk(md, m);
+    const a = mx.clipAction(clip);
+    a.setLoop(!$('sq').checked && $('lp').checked ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    a.clampWhenFinished = true; a.reset().play();
+    if (prev !== a) { a.crossFadeFrom(prev, 0.3, false); const pc = prev.getClip(); setTimeout(() => mx.uncacheClip(pc), 600); }
+    if (md.tailHold) { md.tailHold = false; md.physHold = PHYS_HOLD; }   // 終了前に止めた物理は、つないだ先で少しおいてから再開
+    action = a; cur = i; playing = true; $('ms').value = i; startAudio(i, cont);
+    return;
+  }
+  let phys = $('mp').checked;
+  if (phys && ammoDead) phys = false;
+  if (phys) {
+    st('物理を準備中…');
+    try { await loadAmmo(); } catch (e) { st('物理を使えません: ' + (e?.message || e)); phys = false; }
+    if (mmd !== md) return;
+  }
+  if (h.objects.has(md.mesh)) h.remove(md.mesh);
+  md.mesh.pose();
+  h.enable('ik', !!m.vmd);                                // VRMAから作ったクリップはFKのみなので、IKは切る
+  h.add(md.mesh, { animation: clip, physics: phys, warmup: 120, animationWarmup: !(phys && $('ph1').checked), gravity: mgv(), maxStepNum: 8, unitStep: 1 / (65 * val('mpq')) });   // 遅いフレームでも物理の時間が遅れないよう、1回で進める刻みの上限を増やす
+  h.enable('physics', phys);   // IK（足など）は helper が解く
+  if (phys) try { capPhysVelocity(md); } catch (e) { console.warn(e); }
+  setupIk(md, m);
+  applyPhys(md, true);
+  md.blended = false;
+  if (phys && $('ph1').checked) { try { md.blended = physBlendIn(md); } catch (e) { console.warn(e); } }
+  else if (phys && md.ikCur) try { applyIk(0); h._animateMesh(md.mesh, 0); const ph = h.objects.get(md.mesh).physics; ph.reset(); ph.warmup(60); } catch (e) { console.warn(e); }   // 足IKを切った状態の0フレーム目で、物理を初期化し直す
+  const mx = h.objects.get(md.mesh).mixer; mx.addEventListener('finished', onFinished);
+  const a = mx.clipAction(clip);
+  a.setLoop(!$('sq').checked && $('lp').checked ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+  a.clampWhenFinished = true; a.reset().play();
+  md.physHold = 0; md.tailHold = false;
+  if (phys && $('ph0').checked && !md.blended) { md.physHold = PHYS_HOLD; h.enable('physics', false); }   // 開始直後は腕や足がスカートに干渉していることがあるので、少しの間だけ物理を止める
+  // フェードインはしない：h.add の時点で helper が0秒目のポーズで物理を初期化済み。ここで重み0から始めると骨が初期ポーズへ一瞬戻り、
+  // 座りへ向かう脚がスカートを下から突き上げて捲れ上がる
+  action = a; cur = i; $('ms').value = i; playing = true;
+  startAudio(i, cont);
+}
+function stopMotion() {
+  au.pause(); curSrc = null;
+  if (mmd) { if (mmd.helper.objects.has(mmd.mesh)) mmd.helper.remove(mmd.mesh); mmd.mesh.pose(); action = null; playing = false; return; }
+  if (!vrm) return;
+  action?.stop(); mixer?.stopAllAction(); playing = false;
+  vrm.humanoid.resetNormalizedPose();
+}
+const mrec = [];                                       // モーション番号 → { file, audio }（保存用）
+// 2023年ごろの旧VRMAは specVersion が無く、three-vrm-animation が読み込みを打ち切る → "1.0-draft" を補ってから解析する
+function fixVrmaSpec(buf) {
+  try {
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546C67 || dv.getUint32(16, true) !== 0x4E4F534A) return buf;   // 'glTF' と先頭 JSON チャンクを確認
+    const jl = dv.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl)));
+    const ex = json.extensions?.VRMC_vrm_animation;
+    if (!ex || ex.specVersion) return buf;
+    ex.specVersion = '1.0-draft';
+    let jb = new TextEncoder().encode(JSON.stringify(json));
+    const pad = (4 - jb.length % 4) % 4;
+    if (pad) { const t = new Uint8Array(jb.length + pad).fill(0x20); t.set(jb); jb = t; }
+    const rest = new Uint8Array(buf, 20 + jl);                                   // 以降のチャンク（BIN など）
+    const out = new Uint8Array(20 + jb.length + rest.length);
+    out.set(new Uint8Array(buf, 0, 20)); out.set(jb, 20); out.set(rest, 20 + jb.length);
+    const ov = new DataView(out.buffer);
+    ov.setUint32(8, out.length, true); ov.setUint32(12, jb.length, true);
+    return out.buffer;
+  } catch (e) { console.warn('fixVrmaSpec', e); return buf; }
+}
+async function addMotion(file) {                       // 追加できたら番号、失敗なら -1
+  try {
+    if (/\.vmd$/i.test(file.name)) {                    // VMD：モデルごとに解析が要るので、再生時に変換する（ここでは中身を保持するだけ）
+      const copy = new File([await file.arrayBuffer()], file.name);
+      const i = motions.push({ vmd: copy }) - 1, o = document.createElement('option');
+      o.value = i; o.dataset.n = o.textContent = file.name.replace(/\.vmd$/i, ''); $('ms').appendChild(o);
+      mrec[i] = { file: copy, audio: null };
+      $('ms').querySelector('option[value="-1"]')?.remove();
+      return i;
+    }
+    const l = new GLTFLoader();
+    l.register(p => new VRMAnimationLoaderPlugin(p));
+    const buf = await file.arrayBuffer(), copy = new File([buf], file.name);   // 中身をコピーして保持
+    const gltf = await l.parseAsync(fixVrmaSpec(buf), '');                                  // blob URL を使わず直接解析
+    const anim = gltf.userData.vrmAnimations?.[0];
+    if (!anim) { lastErr = file.name + ': VRMAのアニメーションが見つかりません'; return -1; }
+    const i = motions.push(anim) - 1, o = document.createElement('option');
+    o.value = i; o.dataset.n = o.textContent = file.name.replace(/\.(vrma|glb)$/i, ''); $('ms').appendChild(o);
+    mrec[i] = { file: copy, audio: null };
+    $('ms').querySelector('option[value="-1"]')?.remove();
+    return i;
+  } catch (err) { console.error(err); lastErr = file.name + ': ' + (err?.message || err); return -1; }
+}
+let lastErr = '';
+const saveMotion = async i => {                         // モーション本体・音・件数を別キーで保存
+  await put('mo:' + i, mrec[i].file);
+  if (mrec[i].audio) await put('mu:' + i, mrec[i].audio); else await idb('readwrite', s => s.delete('mu:' + i)).catch(() => {});
+  await put('mn', mrec.length);
+};
+$('fw').addEventListener('change', async e => {
+  let ok = 0;
+  for (const file of [...e.target.files]) { const i = await addMotion(file); if (i >= 0) { ok++; saveMotion(i); } }
+  if (motions.length) $('ms').value = motions.length - 1;
+  e.target.value = '';
+  st(ok ? ok + '件のモーションを追加しました。' : 'VRMAとして読み込めませんでした。' + (lastErr ? '（' + lastErr + '）' : ''));
+});
+let playLbl = '再生';
+$('play').onclick = () => {
+  if (playing) { stopMotion(); return; }                  // 再生中は停止
+  if (!vrm && !mmd) { st('先にモデルを選んでください。'); return; }
+  let i = +$('ms').value; if (i < 0 || !motions[i]) { st('先にモーションを追加してください。'); return; }
+  if (vrm && motions[i].vmd) {                            // VRMはVMDを再生できない：順番に再生なら次のVRMAから始める
+    let j = -1; for (let k = 1; k <= motions.length; k++) { const c = (i + k) % motions.length; if (!motions[c].vmd) { j = c; break; } }
+    if (j < 0 || !$('sq').checked) { st('VMDはVRMでは再生できません（VRMAを選ぶか、MMDモデルに切り替えてください）。'); return; }
+    i = j;
+  }
+  playMotion(i);
+};
+let cur = -1;
+function startAudio(i, cont) {
+  const m = motionAudio[i], url = m ? m.url : defAudio;
+  if (!url) { au.pause(); curSrc = null; return; }
+  const isDef = !m, seq = $('sq').checked;
+  au.loop = $('lp').checked && (!seq || isDef);
+  if (!(cont && curSrc === url && !au.paused)) { au.src = url; curSrc = url; au.currentTime = 0; }
+  ensureGain(); setVol(val('vo')); au.play().catch(e => st('音の再生に失敗: ' + e.message));
+}
+function playMotion(i, cont) {
+  if (mmd || motions[i]?.vmd) { playMMD(i, cont); return; }
+  const prev = playing ? action : null;
+  if (!prev) stopMotion();
+  cur = i; $('ms').value = i;
+  action = mixer.clipAction(createVRMAnimationClip(motions[i], vrm));
+  action.setLoop(!$('sq').checked && $('lp').checked ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+  action.clampWhenFinished = true;
+  action.reset().play(); playing = true;
+  vrmHold = 0;
+  if (!prev && vrm.springBoneManager && $('ph0').checked) { vrmHold = PHYS_HOLD; vrm.springBoneManager.reset(); }
+  else if (prev && vrmTail) vrmHold = PHYS_HOLD;   // 終了前の停止中に次へつなぐ場合も、少しおいてから再開
+  vrmTail = false;   // 開始直後は揺れ物の更新を止める
+  startAudio(i, cont);
+  if (prev) {
+    action.crossFadeFrom(prev, 0.3, false);
+    const pc = prev.getClip(); setTimeout(() => mixer.uncacheClip(pc), 600);
+  }
+}
+function onFinished(e) {
+  if (e.action !== action) return;
+  // MMDは終わっても初期ポーズへ戻さず、最後の姿勢を保つ（次の再生はその姿勢からつなぐ）。VRMは従来どおり
+  const end = () => { if (mmd) { playing = false; au.pause(); curSrc = null; } else stopMotion(); };
+  if (!$('sq').checked) { end(); return; }
+  let n = cur;
+  for (let k = 0; k < motions.length; k++) {
+    n++;
+    if (n >= motions.length) { if ($('lp').checked) n = 0; else { end(); return; } }
+    if (!(vrm && motions[n]?.vmd)) { const m = n; queueMicrotask(() => playMotion(m, true)); return; }   // VRMはVMDを再生できないので飛ばす
+  }
+  end();
+}
+
+// ---- 音声（既定の音 / モーションごとの音） ----
+function mark(i) {
+  const o = $('ms').querySelector('option[value="' + i + '"]');
+  if (o) o.textContent = o.dataset.n + (motionAudio[i] ? ' ♪' : '');
+}
+function setDef(f) { defAudio = URL.createObjectURL(f); defName = f.name; }
+$('fa').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  setDef(f); keep('def', f);
+  st('既定の音を設定しました: ' + f.name);
+});
+$('fmu').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const i = +$('ms').value; if (i < 0 || !motions[i]) { st('先にモーションを追加してください。'); return; }
+  motionAudio[i] = { url: URL.createObjectURL(f), name: f.name }; mark(i); own(f).then(o => { mrec[i].audio = o; return saveMotion(i); }).catch(fail);
+  st('「' + $('ms').selectedOptions[0].dataset.n + '」に音を紐付けました: ' + f.name);
+});
+$('fmx').onclick = () => {
+  const i = +$('ms').value;
+  if (motionAudio[i]) { delete motionAudio[i]; mrec[i].audio = null; saveMotion(i); mark(i); st('紐付けを外しました。'); }
+  else st('このモーションに紐付けはありません。');
+};
+$('mdel').onclick = async () => {                       // 選択中のモーションを削除（後ろの番号を詰めて保存し直す）
+  const i = +$('ms').value;
+  if (i < 0 || !motions[i]) { st('削除するモーションがありません。'); return; }
+  const name = $('ms').selectedOptions[0].dataset.n;
+  if (!confirm('モーション「' + name + '」を削除しますか？')) return;
+  if (playing && cur === i) stopMotion(); else if (cur > i) cur--;
+  if (cur === i) cur = -1;
+  const oldN = mrec.length;
+  if (motionAudio[i]) URL.revokeObjectURL(motionAudio[i].url);
+  motions.splice(i, 1); mrec.splice(i, 1);
+  const ma = Object.entries(motionAudio).map(([k, v]) => [+k, v]);       // 音の紐付けも番号を詰める
+  for (const k of Object.keys(motionAudio)) delete motionAudio[k];
+  for (const [k, v] of ma) if (k !== i) motionAudio[k > i ? k - 1 : k] = v;
+  const sel = $('ms');
+  sel.querySelector('option[value="' + i + '"]')?.remove();
+  for (const o of sel.options) if (+o.value > i) o.value = +o.value - 1;
+  if (motions.length) sel.value = Math.min(i, motions.length - 1);
+  else sel.innerHTML = '<option value="-1">（未読込）</option>';
+  try {
+    for (let j = i; j < mrec.length; j++) await saveMotion(j);          // ずれた分を保存し直す
+    for (let j = mrec.length; j < oldN; j++) await idb('readwrite', s => { s.delete('mo:' + j); s.delete('mu:' + j); });
+    await put('mn', mrec.length);
+  } catch (err) { console.warn(err); }
+  st('「' + name + '」を削除しました。');
+};
+$('vo').oninput = () => setVol(val('vo'));
+$('ms').onchange = () => {
+  const i = +$('ms').value; if (!motions[i]) return;
+  st(motionAudio[i] ? '音: ' + motionAudio[i].name : '音: 紐付けなし（' + (defName ? '既定: ' + defName : '既定の音も未設定') + '）');
+};
+
+// ---- 小物（glb）。位置は箱の中央を原点とした cm。足元の円と壁の外には置けない（すり抜けで解除） ----
+function sel() { return props[+$('oo').value]; }
+function syncUI(o) { if (!o) return; ['x', 'z', 'y', 's', 'r'].forEach(k => $('o' + k).value = o[k]); $('ol').checked = o.light; $('ot').checked = o.thru; $('ow').checked = !!o.sway; }
+function rebuildSel(i) {
+  const e = $('oo'); e.innerHTML = props.length ? '' : '<option value="-1">（小物なし）</option>';
+  props.forEach((o, j) => e.add(new Option(o.name, j)));
+  if (props.length) { e.value = Math.min(Math.max(i, 0), props.length - 1); syncUI(sel()); }
+}
+function fit(o) {
+  if (o.thru) return;
+  const ch = val('ch'), R = ch * 0.2, u = S.u;
+  if (o.y < ch * 0.9) { const d = Math.hypot(o.x, o.z); if (d < R) { if (d < 1e-6) o.x = R; else { o.x *= R / d; o.z *= R / d; } } }   // キャラの足元の円
+  for (let k = 0; k < 3; k++) for (const f of S.F) {                                                                              // 壁の内側へ
+    const n = basis(f).vn, dd = n.x * (S.c.x + o.x * u - f.pa.x) + n.z * (S.c.z + o.z * u - f.pa.z), m = 0.8 * u;
+    if (dd > -m) { o.x -= (dd + m) * n.x / u; o.z -= (dd + m) * n.z / u; }
+  }
+}
+function applyProps() {
+  const u = S.u, g0 = 0.2 * u; lampPos = null;
+  props.forEach(o => {
+    fit(o);
+    o.piv.position.set(S.c.x + o.x * u, g0 + o.y * u, S.c.z + o.z * u);
+    o.piv.scale.setScalar(o.k * o.s * u); o.piv.rotation.y = o.r * Math.PI / 180;
+    o.piv.traverse(m => { if (m.isMesh) m.castShadow = !o.light; });                  // 光源の小物は自分の光を遮らない
+    if (o.light) lampPos = V(o.piv.position.x, g0 + (o.y + o.hcm * o.s * 0.5) * u, o.piv.position.z);
+  });
+  if (lampPos) lampBase.copy(lampPos);                   // 光源の小物を動かしたら光も追う
+}
+async function addProp(file, q = {}, fresh = false) {
+  try {
+    const buf = await file.arrayBuffer(), copy = new File([buf], file.name);
+    const g = await new GLTFLoader().parseAsync(buf, ''), obj = g.scene;
+    const bx = new THREE.Box3().setFromObject(obj), sz = bx.getSize(V(0, 0, 0)), ct = bx.getCenter(V(0, 0, 0));
+    obj.position.set(-ct.x, -bx.min.y, -ct.z); obj.traverse(m => { m.frustumCulled = false; });   // 底面の中央を原点に
+    const piv = new THREE.Group(); piv.add(obj); propG.add(piv);
+    const hcm = q.hcm ?? 0.25 * val('ch');                                                          // 追加時は身長の4分の1
+    const o = { name: file.name.replace(/\.(glb|gltf)$/i, ''), file: copy, piv, hcm, k: hcm / (sz.y || 1),
+      x: q.x ?? 4, z: q.z ?? 0, y: q.y ?? 0, s: q.s ?? 1, r: q.r ?? 0, light: !!q.light, thru: !!q.thru, sway: !!q.sway };
+    props.push(o); rebuildSel(props.length - 1); applyProps();
+    if (fresh) { const i = props.length - 1; put('pf:' + i, copy).then(() => put('pn', props.length)); }
+    return true;
+  } catch (err) { console.error(err); st('小物の読み込み失敗: ' + file.name + ' ' + (err?.message || err)); return false; }
+}
+async function saveProps() { for (let j = 0; j < props.length; j++) await put('pf:' + j, props[j].file); await put('pn', props.length); }
+$('of').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (props.length >= 5) { st('小物は5個までです。'); return; }
+  st('小物を読み込み中…');
+  if (await addProp(f, {}, true)) st('小物を追加しました: ' + f.name);
+});
+$('oo').onchange = () => syncUI(sel());
+['ox', 'oz', 'oy', 'os', 'or'].forEach(id => $(id).oninput = () => { const o = sel(); if (!o) return; o[id[1]] = +$(id).value; applyProps(); syncUI(o); });
+$('ol').onchange = () => {
+  const o = sel(); if (!o) return;
+  props.forEach(p => p.light = false); o.light = $('ol').checked;
+  if (o.light) $('lt').value = '3';                                                                 // 光源ONでランタン光に切り替え
+  applyProps(); light();
+};
+$('ot').onchange = () => { const o = sel(); if (!o) return; o.thru = $('ot').checked; applyProps(); };
+$('ow').onchange = () => { const o = sel(); if (!o) return; o.sway = $('ow').checked; };
+$('od').onclick = () => {
+  const i = +$('oo').value, o = props[i]; if (!o) return;
+  propG.remove(o.piv); VRMUtils.deepDispose(o.piv); props.splice(i, 1);
+  rebuildSel(i); applyProps(); light(); saveProps();
+};
+
+// ---- 保存した設定の復元と初回ビルド ----
+for (const [id, v] of Object.entries(saved.p || {})) {        // 保存したパラメータを復元
+  const e = $(id); if (!e) continue;
+  if (e.type === 'checkbox') e.checked = !!v;
+  else if (e.tagName !== 'SELECT' || [...e.options].some(o => o.value == v)) e.value = v;
+}
+$('sty').disabled = !$('stc').checked;
+let backCrashed = false;                                     // 前回、奥の人の読み込み中に落ちたなら、奥の人をオフに戻す
+try { if (localStorage.getItem('vrm_back_loading')) { localStorage.removeItem('vrm_back_loading'); $('b2').checked = false; backCrashed = true; } } catch {}
+for (const d of document.querySelectorAll('#ui details')) if (saved.open && d.id in saved.open) d.open = saved.open[d.id];   // 開閉の状態を復元
+if (saved.lay != null) { lay = saved.lay; $('lay').textContent = '並び: ' + ['自動', '左右', '上下'][lay]; }
+if (saved.pv) { pv = true; $('pvb').textContent = '表示: 立体'; }
+build();
+
+// ---- 視点（cm、角の真下を x=0 とする。y は床から） ----
+const eye = V(0, 7, 30), goal = eye.clone();
+goal.z = eye.z = val('di');
+let tracking = false, lm = null, video = null, drag = null, lastT = -1;
+// dragMode 0:向き/回転 1:視点 2:小物
+// flick    0:モデルを回す 1:ランタン（視点が箱の中心のまわりを回る）
+let dragMode = [0, 1, 2].includes(saved.dragMode) ? saved.dragMode : 0, yaw = 0, orb = 0, tlt = 0, flick = saved.fm === 1 ? 1 : 0;
+$('c').addEventListener('pointerdown', e => drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, gx: goal.x, gy: goal.y });
+addEventListener('pointerup', () => drag = null);
+addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (dragMode === 0) {
+    if (flick) { orb -= (e.clientX - drag.lx) * 0.012; tlt = THREE.MathUtils.clamp(tlt + (e.clientY - drag.ly) * 0.008, -1.48, 1.48); }   // 横=一周 縦=上下の傾き（下へドラッグ＝見下ろす）
+    else { yaw += (e.clientX - drag.lx) * 0.012; rig.rotation.y = yaw; }
+    drag.lx = e.clientX; drag.ly = e.clientY; return;
+  }
+  if (dragMode === 2) {                          // 小物を床の上で動かす
+    const o = sel(); if (o) { o.x += (e.clientX - drag.lx) * 0.04; o.z += (e.clientY - drag.ly) * 0.04; applyProps(); syncUI(o); }
+    drag.lx = e.clientX; drag.ly = e.clientY; return;
+  }
+  if (tracking) return;
+  goal.x = drag.gx + (e.clientX - drag.x) * 0.04; goal.y = drag.gy - (e.clientY - drag.y) * 0.04;
+});
+$('dm').textContent = 'ドラッグ: ' + ['向き', '視点', '小物'][dragMode];
+$('dm').onclick = () => { dragMode = (dragMode + 1) % 3; $('dm').textContent = 'ドラッグ: ' + ['向き', '視点', '小物'][dragMode]; };
+$('fr').onclick = () => { yaw = 0; rig.rotation.y = 0; orb = tlt = 0; };
+const fmLabel = () => $('fm').textContent = 'フリック: ' + (flick ? 'ランタン' : 'モデル');
+fmLabel();
+$('fm').onclick = () => { flick ^= 1; fmLabel(); dragMode = 0; $('dm').textContent = 'ドラッグ: ' + ['向き', '視点', '小物'][dragMode]; };
+$('di').oninput = () => { if (!tracking) goal.z = val('di'); };
+
+$('cam').onclick = async () => {
+  if (tracking) { tracking = false; video.srcObject.getTracks().forEach(t => t.stop()); $('cam').textContent = 'カメラ開始'; return; }
+  try {
+    st('カメラと顔検出を準備中…');
+    video = document.createElement('video'); video.playsInline = true; video.muted = true;
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+    await video.play();
+    if (!lm) {
+      const { FaceLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+      const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      lm = await FaceLandmarker.createFromOptions(fs, { runningMode: 'VIDEO', numFaces: 1,
+        baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: 'GPU' } });
+    }
+    tracking = true; $('cam').textContent = 'カメラ停止';
+    st('顔を追跡中。カメラは正面の面の上端付近にある想定です。');
+  } catch (err) { st('カメラ開始失敗: ' + err.message); }
+};
+
+function track() {
+  if (!tracking || video.readyState < 2 || video.currentTime === lastT) return;
+  lastT = video.currentTime;
+  const f = lm.detectForVideo(video, performance.now()).faceLandmarks?.[0]; if (!f) return;
+  const a = f[33], b = f[263], cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+  const span = Math.hypot((b.x - a.x) * video.videoWidth, (b.y - a.y) * video.videoHeight) / video.videoWidth;
+  const tanH = Math.tan(30 * Math.PI / 180);                       // 水平画角60°と仮定
+  const z = THREE.MathUtils.clamp(4.5 / (span * tanH), 12, 80);   // 目尻間隔9cm
+  const wM = 2 * z * tanH, hM = wM * video.videoHeight / video.videoWidth;
+  goal.set(-(cx - .5) * wM, val('sh') + 0.5 - (cy - .5) * hM, z);
+}
+
+// ---- 斜め射影（一般形）：面の3隅と目の位置から視錐台を作る ----
+function basis(s) {
+  const vr = s.pb.clone().sub(s.pa).normalize(), vu = s.pc.clone().sub(s.pa).normalize();
+  return { vr, vu, vn: new THREE.Vector3().crossVectors(vr, vu) };
+}
+// ---- ランタン回転：実機を置いたまま、目（視点）が箱の中心のまわりを歩く。面は動かさない ----
+// orb: 水平に回る角度  tlt: 上下に傾く角度（+で上から見下ろす）。回転の中心は箱の中央の高さ
+const yAx = new THREE.Vector3(0, 1, 0), xAx = new THREE.Vector3(1, 0, 0), qOrb = new THREE.Quaternion(), qTl = new THREE.Quaternion(), pOrb = new THREE.Vector3();
+function orbitQ() { return qOrb.setFromAxisAngle(yAx, orb).multiply(qTl.setFromAxisAngle(xAx, -tlt)); }
+function orbitPos(p) {
+  if (!orb && !tlt) return p;
+  pOrb.set(S.c.x, val('sh') * S.u / 2, S.c.z);
+  return p.clone().sub(pOrb).applyQuaternion(orbitQ()).add(pOrb);
+}
+function setView(cam, s, pe, u = S.u) {
+  const { vr, vu, vn } = basis(s);
+  const va = s.pa.clone().sub(pe), vb = s.pb.clone().sub(pe), vc = s.pc.clone().sub(pe);
+  const d = -vn.dot(va); if (d < 0.01 * u) return false;          // 面の裏側（＝目から遠い側）は描かない
+  const n = Math.max(0.2 * u, 0.3 * d), k = n / d;      // ニアを遠めに取るほど奥行きの精度が上がり、床の重なりのチラつきが減る
+  cam.position.copy(pe);
+  cam.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(vr, vu, vn));
+  cam.updateMatrixWorld(true);
+  cam.projectionMatrix.makePerspective(vr.dot(va) * k, vr.dot(vb) * k, vu.dot(vc) * k, vu.dot(va) * k, n, 1000 * u);
+  cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+  return true;
+}
+function quad(s, tex) {                                          // 面の位置・向きに板を置く（cm）
+  const { vr, vu, vn } = basis(s), u = S.u;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(s.pb.distanceTo(s.pa) / u, s.pc.distanceTo(s.pa) / u),
+    new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, side: THREE.DoubleSide }));
+  m.position.copy(s.pa).addScaledVector(s.pb.clone().sub(s.pa), .5).addScaledVector(s.pc.clone().sub(s.pa), .5).divideScalar(u);
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(vr, vu, vn));
+  return m;
+}
+$('mn').onclick = () => { const u = $('ui'); u.style.display = u.style.display === 'none' ? '' : 'none'; };
+function pmName() { return pm === 0 ? '見える面' : pm === 1 ? '全面並べ' : (pm === 2 ? '0番(母機)' : (pm - 2) + '番(子機)'); }
+function setPmLabel() { $('pmb').textContent = '平面: ' + pmName(); }
+$('pmb').onclick = () => { pm = (pm + 1) % (2 + (S.N || 1)); setPmLabel(); if (pv) { pv = false; $('pvb').textContent = '表示: 平面'; } };
+function faceEye(i, pe) {                       // 裏側の面は、その面の正面から同じ距離・同じ高さで見た目を使う
+  const f = S.F[i], { vn } = basis(f), m = A(f.pa, f.pb).multiplyScalar(.5), m0 = A(S.F[0].pa, S.F[0].pb).multiplyScalar(.5);
+  const d = Math.max(0.5 * S.w, Math.hypot(pe.x - m0.x, pe.z - m0.z));
+  const e = m.addScaledVector(vn, d); e.y = pe.y; return e;
+}
+// ===== 携帯どうしで2面（WebRTC・手動で接続コードを受け渡し）。母機が2番目の面を映像にして子機へ送り、子機は受けて全画面表示 =====
+const cp = { pc: null, out: null, ctx: null, on: false, only0: true };
+const setSt = t => { $('cps').textContent = t; };
+const mkPC = () => { const pc = new RTCPeerConnection({ iceServers: [] }); pc.onconnectionstatechange = () => setSt('接続: ' + pc.connectionState); return pc; };
+const gathered = pc => new Promise(r => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 2500); pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } }; });
+const enc = d => btoa(JSON.stringify(d)), dec = t => JSON.parse(atob(t.trim()));
+$('cpb').onclick = () => $('cp').classList.toggle('on');
+$('cp0').onclick = () => { cp.only0 = !cp.only0; $('cp0').textContent = '母機：0番全画面 ' + (cp.only0 ? 'ON' : 'OFF'); };
+$('cpx').onclick = () => $('cp').classList.remove('on');
+$('cpy').onclick = async () => { const b = $('cpt'); b.select(); try { await navigator.clipboard.writeText(b.value); setSt('コピーしました'); } catch (e) { document.execCommand('copy'); } };
+$('cpo').onclick = async () => {
+  try {
+    if (S.N !== 2) { setSt('先に面数を2面にしてください'); return; }
+    pm = 1; setPmLabel();                                    // 母機は2面を並べて描く。1番の面だけ切り出して送る
+    cp.out = document.createElement('canvas'); cp.out.width = 640; cp.out.height = 360; cp.ctx = cp.out.getContext('2d');
+    cp.pc = mkPC(); const ms = cp.out.captureStream(30); ms.getTracks().forEach(t => cp.pc.addTrack(t, ms));
+    await cp.pc.setLocalDescription(await cp.pc.createOffer()); await gathered(cp.pc);
+    $('cpt').value = enc(cp.pc.localDescription); cp.on = true; setSt('このコードを子機へ。子機の応答コードをここに貼って「母機：応答で接続」');
+  } catch (e) { setSt('エラー: ' + e.message); }
+};
+$('cpa').onclick = async () => {
+  try {
+    const pc = cp.pc = mkPC(), rv = $('rv');
+    pc.ontrack = e => { rv.srcObject = e.streams[0]; rv.play().catch(() => {}); document.body.classList.add('rcv'); $('cp').classList.remove('on'); };
+    await pc.setRemoteDescription(dec($('cpt').value)); await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
+    $('cpt').value = enc(pc.localDescription); setSt('応答コードを母機へ。接続したら映像が全画面になります（画面タップで操作パネル）');
+  } catch (e) { setSt('エラー: ' + e.message); }
+};
+$('cpc').onclick = async () => { try { await cp.pc.setRemoteDescription(dec($('cpt').value)); setSt('接続中…'); } catch (e) { setSt('エラー: ' + e.message); } };
+$('rv').onclick = () => $('cp').classList.toggle('on');
+function pushFace(rects, vis) {                              // 母機：1番の面の領域をcanvasから切り出して送る
+  if (!cp.on) return; const k = vis.indexOf(1); if (k < 0) return;
+  const r = rects[k], pr = renderer.getPixelRatio(), sw = r[2] * pr, sh = r[3] * pr, m = Math.min(1, 960 / Math.max(sw, sh)), ow = Math.round(sw * m), oh = Math.round(sh * m);
+  if (cp.out.width !== ow || cp.out.height !== oh) { cp.out.width = ow; cp.out.height = oh; }
+  cp.ctx.drawImage(renderer.domElement, r[0] * pr, (innerHeight - r[1] - r[3]) * pr, sw, sh, 0, 0, ow, oh);
+}
+$('pvb').onclick = () => { pv = !pv; $('pvb').textContent = '表示: ' + (pv ? '立体' : '平面'); };
+$('lay').onclick = () => { lay = (lay + 1) % 3; $('lay').textContent = '並び: ' + ['自動', '左右', '上下'][lay]; };
+
+function viewports(n) {                       // 平面：見える面の数だけ並べる（2面は左右/上下、それ以外は格子）
+  const W = val('sw'), H = val('sh'), gap = 10, uiH = $('ui').offsetHeight;
+  const cw = innerWidth, ch = innerHeight - uiH;
+  if (n < 1) return [];
+  if (n !== 2) {
+    let b = null;
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n / c), s = Math.min((cw - gap * (c - 1)) / (c * W), (ch - gap * (r - 1)) / (r * H));
+      if (!b || s > b.s) b = { c, r, s };
+    }
+    const w = W * b.s, h = H * b.s, x0 = (cw - (b.c * w + gap * (b.c - 1))) / 2, y0 = uiH + (ch - (b.r * h + gap * (b.r - 1))) / 2;
+    return Array.from({ length: n }, (_, i) => [x0 + (i % b.c) * (w + gap), y0 + (b.r - 1 - Math.floor(i / b.c)) * (h + gap), w, h]);
+  }
+  const land = lay === 0 ? cw >= ch : lay === 1;
+  const s = land ? Math.min((cw - gap) / (2 * W), ch / H) : Math.min(cw / W, (ch - gap) / (2 * H));
+  const w = W * s, h = H * s;
+  if (land) { const x0 = (cw - 2 * w - gap) / 2, y = uiH + (ch - h) / 2; return [[x0, y, w, h], [x0 + w + gap, y, w, h]]; }
+  const x = (cw - w) / 2, y0 = uiH + (ch - 2 * h - gap) / 2; return [[x, y0 + h + gap, w, h], [x, y0, w, h]];
+}
+
+// ---- 顔（首・頭）を視点へ向ける。目は VRM の lookAt が追う ----
+let gY = 0, gP = 0;
+const tmpV = new THREE.Vector3(), qN = new THREE.Quaternion(), qH = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, 'YXZ');
+function gaze(pe) {
+  const hum = vrm.humanoid, hd = hum.getNormalizedBoneNode('head'), nk = hum.getNormalizedBoneNode('neck'); if (!hd) return;
+  hd.getWorldPosition(tmpV);
+  const d = rig.worldToLocal(pe.clone()).sub(rig.worldToLocal(tmpV.clone()));
+  const w = val('gz'), cl = THREE.MathUtils.clamp;
+  const yaw = cl(Math.atan2(d.x, d.z), -0.9, 0.9) * w, pit = cl(Math.atan2(d.y, Math.hypot(d.x, d.z)), -0.5, 0.5) * w;
+  gY += (yaw - gY) * 0.15; gP += (pit - gP) * 0.15;
+  const fl = flip();
+  qN.setFromEuler(eu.set(-gP * 0.4 * fl, gY * 0.4, 0)); qH.setFromEuler(eu.set(-gP * 0.6 * fl, gY * 0.6, 0));
+  if (playing) { nk?.quaternion.multiply(qN); hd.quaternion.multiply(qH); }
+  else { nk?.quaternion.copy(qN); hd.quaternion.copy(qH); }
+}
+
+// ---- 瞬き ----
+let nextBlink = 2, blinkT = -1;
+function blink(dt) {
+  const em = vrm.expressionManager; if (!em) return;
+  const f = val('bl');
+  if (f === 0) { if (blinkT >= 0) { em.setValue('blink', 0); blinkT = -1; } return; }
+  nextBlink -= dt;
+  if (blinkT < 0 && nextBlink <= 0) blinkT = 0;
+  if (blinkT < 0) return;
+  blinkT += dt; const p = blinkT / 0.16;
+  if (p >= 1) { em.setValue('blink', 0); blinkT = -1; nextBlink = (2 + Math.random() * 4) / f; }
+  else em.setValue('blink', Math.sin(p * Math.PI));
+}
+
+// ---- 呼吸 ----
+const qB = new THREE.Quaternion();
+function breathe() {
+  const h = vrm.humanoid, bn = h.getNormalizedBoneNode('chest') || h.getNormalizedBoneNode('spine'); if (!bn) return;
+  const t = performance.now() / 1000, b = Math.sin(t * 1.5), s = Math.sin(t * 0.5);
+  const k = val('br');
+  qB.setFromEuler(eu.set(b * 0.012 * k, s * 0.015 * k, s * 0.01 * k));
+  if (playing) bn.quaternion.multiply(qB); else bn.quaternion.copy(qB);
+}
+
+// VRM0 と VRM1 の違い：VRM0 の骨は正面が -z 向き。骨ローカルで x・z 軸まわりに回すときは符号を反転する。
+function flip() { return vrm?.meta?.metaVersion === '0' ? -1 : 1; }
+
+// ---- 指ごとの個体差 ----
+const fv = {};
+function rollHands() {
+  for (const s of ['left', 'right']) for (const f of ['Index', 'Middle', 'Ring', 'Little', 'Thumb'])
+    fv[s + f] = { k: 0.7 + Math.random() * 0.6, sp: (Math.random() - .5) * 0.12 };
+}
+rollHands(); $('hr').onclick = rollHands;
+
+// ---- リラックスした腕（モーション中でないときだけ） ----
+function relax(v = vrm) {                               // v: 対象のVRM（奥の人にも使う）
+  const fl = v?.meta?.metaVersion === '0' ? -1 : 1;
+  const hu = v.humanoid, g = n => hu.getNormalizedBoneNode(n), t = performance.now() / 1000;
+  const a = val('am'), el = val('el'), hc = val('hd'), sd = val('sd'), sy = val('sy');
+  for (const [side, sg, ph, bend] of [['left', -1, 0, 1], ['right', 1, 1.7, 0.9]]) {
+    const U = g(side + 'UpperArm'), Lw = g(side + 'LowerArm'), Sh = g(side + 'Shoulder');
+    if (U) U.rotation.set(Math.sin(t * 0.9 + ph) * 0.03 * sy * fl, 0, fl * sg * a);
+    if (Lw) Lw.rotation.set(0, sg * el * bend, 0);
+    if (Sh) Sh.rotation.set(0, 0, fl * sg * sd * 0.12);
+    [['Index', .7], ['Middle', 1], ['Ring', 1.1], ['Little', 1.2]].forEach(([f, m]) =>
+      [['Proximal', .35], ['Intermediate', .5], ['Distal', .3]].forEach(([j, c]) => {
+        const B = g(side + f + j), v = fv[side + f]; if (!B) return;
+        B.rotation.set(0, j === 'Proximal' ? v.sp * hc : 0, fl * sg * c * m * v.k * hc);
+      }));
+    const tk = fv[side + 'Thumb'].k;
+    [['Metacarpal', -sg * .25, sg * .2], ['Proximal', 0, sg * .25], ['Distal', 0, sg * .2]].forEach(([j, y, z]) => {
+      const B = g(side + 'Thumb' + j); if (B) B.rotation.set(0, y * tk * hc, fl * z * tk * hc);
+    });
+  }
+}
+
+// ---- 目線の泳ぎ ----
+const wTo = new THREE.Vector3(), wCur = new THREE.Vector3(); let wNext = 1;
+function wander(dt) {
+  wNext -= dt; if (!val('wd')) wTo.set(0, 0, 0);
+  if (wNext <= 0) {
+    wNext = 0.8 + Math.random() * 2.5;
+    if (Math.random() < 0.4) wTo.set(0, 0, 0);
+    else wTo.set((Math.random() - .5) * 6, (Math.random() - .5) * 4, 0).multiplyScalar(S.u * val('wd'));
+  }
+  wCur.lerp(wTo, 1 - Math.exp(-dt * 12));
+}
+
+// ---- ぼかし（被写界深度）：キャラの中心からの3D距離が遠いほどぼかす ----
+// 2パス：①深度から「ぼけ量」を1回だけ計算して色のαに入れる → ②周囲を円盤状にサンプリング（奥ほどサンプル数を減らす）
+const dofScene = new THREE.Scene(), dofCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const dU = { tC: { value: null }, tD: { value: null }, M: { value: new THREE.Matrix4() }, foc: { value: new THREE.Vector3() },
+  range: { value: 4 }, ramp: { value: 12 }, uCm: { value: 1 }, tx: { value: new THREE.Vector2() } };
+const gU = { tS: { value: null }, tD: { value: null }, pInv: { value: new THREE.Matrix4() }, zF: { value: 1 }, uCm: { value: 1 }, maxR: { value: 0.015 }, asp: { value: 1 }, taps: { value: 16 } };
+const dofVS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+const dofPre = new THREE.ShaderMaterial({ uniforms: dU, depthTest: false, depthWrite: false, vertexShader: dofVS,
+  fragmentShader: `uniform sampler2D tC, tD; uniform mat4 M; uniform vec3 foc; uniform float range, ramp, uCm; uniform vec2 tx; varying vec2 vUv;
+    float cocAt(vec2 uv){                                // 深度から位置を復元し、キャラ中心との距離でぼけ量(0〜1)を決める
+      vec4 h = M * vec4(uv * 2.0 - 1.0, texture2D(tD, uv).x * 2.0 - 1.0, 1.0);
+      return clamp((length(h.xyz / h.w - foc) / uCm - range) / ramp, 0.0, 1.0);
+    }
+    void main(){
+      float c = 1.0;                                     // 周囲3x3の最小：輪郭のAAピクセルでピント内/外が切り替わるチラつきを防ぐ
+      for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) c = min(c, cocAt(vUv + vec2(float(x), float(y)) * tx));
+      gl_FragColor = vec4(texture2D(tC, vUv).rgb, c);
+    }` });
+const dofGather = new THREE.ShaderMaterial({ uniforms: gU, depthTest: false, depthWrite: false, vertexShader: dofVS,
+  fragmentShader: `uniform sampler2D tS, tD; uniform mat4 pInv; uniform float zF, uCm, maxR, asp; uniform int taps; varying vec2 vUv;
+    void main(){
+      vec4 c0 = texture2D(tS, vUv); vec3 acc = c0.rgb; float ws = 1.0, r0 = c0.a * maxR;   // r0=ぼかし半径（画面の高さに対する割合）
+      if (r0 > 0.0005) {
+        vec4 v = pInv * vec4(vUv * 2.0 - 1.0, texture2D(tD, vUv).x * 2.0 - 1.0, 1.0);
+        float far = clamp((-v.z / v.w - zF) / (20.0 * uCm), 0.0, 1.0);                      // 画面（面）から奥へ離れるほど 1 に近づく
+        int n = int(mix(float(taps), max(4.0, float(taps) * 0.3), far) + 0.5);               // 奥ほどサンプル数を減らす
+        float a0 = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+        for (int i = 0; i < 32; i++) {
+          if (i >= n) break;
+          float dp = sqrt((float(i) + 0.5) / float(n)) * r0, a = a0 + float(i) * 2.3999632;
+          vec4 s = texture2D(tS, vUv + vec2(cos(a) * asp, sin(a)) * dp);
+          float w = clamp(s.a * maxR / max(dp, 1e-4), 0.0, 1.0);                              // ピントの合った物がにじみ出ないよう重みを下げる
+          acc += s.rgb * w; ws += w;
+        }
+      }
+      gl_FragColor = vec4(acc / ws, 1.0);
+      #include <colorspace_fragment>
+    }` });
+const dofMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), dofPre); dofScene.add(dofMesh);
+
+let dofRT = null, cocRT = null, dofKey = '';
+const dofFv = new THREE.Vector3();
+function dofRender(cam, dest, rect) {                   // dest=描画先のRT（nullなら画面の rect へ）
+  const pr = renderer.getPixelRatio();
+  const w = dest ? dest.width : Math.max(1, Math.round(rect[2] * pr)), h = dest ? dest.height : Math.max(1, Math.round(rect[3] * pr));
+  const sc = dest ? 1 : val('ds'), rw = Math.max(1, Math.round(w * sc)), rh = Math.max(1, Math.round(h * sc));   // 画面へ直接描くときだけ解像度を落とせる
+  const smp = $('aa').checked ? 4 : 0, key = rw + 'x' + rh + 'x' + smp;
+  if (key !== dofKey) {                                 // 大きさ・AAが変わったら作り直す
+    if (dofRT) { dofRT.depthTexture.dispose(); dofRT.dispose(); cocRT.dispose(); }
+    dofRT = new THREE.WebGLRenderTarget(rw, rh, { samples: smp, depthTexture: new THREE.DepthTexture(rw, rh) });
+    cocRT = new THREE.WebGLRenderTarget(rw, rh, { depthBuffer: false });
+    dofRT.texture.colorSpace = cocRT.texture.colorSpace = THREE.SRGBColorSpace;   // 8bit(sRGB)で保存：半精度浮動小数より帯域が軽い
+    dofKey = key;
+  }
+  renderer.setRenderTarget(dofRT); renderer.render(scene, cam);
+  const bh = vrm || mmd ? bodyH : val('ch') * S.u, u = S.u;
+  dU.tC.value = dofRT.texture; dU.tD.value = dofRT.depthTexture; dU.M.value.multiplyMatrices(cam.matrixWorld, cam.projectionMatrixInverse); dU.tx.value.set(1 / rw, 1 / rh);
+  dU.foc.value.set(rig.position.x, rig.position.y + bh / 2, rig.position.z); dU.range.value = val('dr'); dU.uCm.value = u;
+  dofMesh.material = dofPre; renderer.setRenderTarget(cocRT); renderer.render(dofScene, dofCam);        // ①ぼけ量
+  dofFv.copy(dU.foc.value).applyMatrix4(cam.matrixWorldInverse);
+  gU.tS.value = cocRT.texture; gU.tD.value = dofRT.depthTexture; gU.pInv.value.copy(cam.projectionMatrixInverse); gU.zF.value = -dofFv.z; gU.uCm.value = u;
+  gU.maxR.value = val('dk') * 0.03; gU.asp.value = h / w; gU.taps.value = +$('dq').value;
+  dofMesh.material = dofGather; renderer.setRenderTarget(dest);
+  if (!dest) { renderer.setViewport(...rect); renderer.setScissor(...rect); }
+  renderer.render(dofScene, dofCam);                                                                       // ②ぼかし
+}
+
+// ---- 描画ループと保存 ----
+const clock = new THREE.Clock();
+renderer.setSize(innerWidth, innerHeight, false);
+addEventListener('resize', () => renderer.setSize(innerWidth, innerHeight, false));
+let ready = false, tm = 0;                              // ready: 復元が終わるまで保存しない
+function saveParams() {
+  if (!ready) return;
+  const p = {};
+  $('ui').querySelectorAll('input[type=range],input[type=checkbox],select').forEach(e => {
+    if (e.id && e.id !== 'ms' && e.id !== 'ml' && !e.closest('#pr')) p[e.id] = e.type === 'checkbox' ? e.checked : e.value;
+  });
+  try { localStorage.setItem(KEY, JSON.stringify({ p, lay, pv, dragMode, fm: flick, ms: val('ms'), open: Object.fromEntries([...document.querySelectorAll('#ui details')].map(d => [d.id, d.open])), props: props.map(o => ({ x: o.x, z: o.z, y: o.y, s: o.s, r: o.r, light: o.light, thru: o.thru, sway: o.sway, hcm: o.hcm })) })); } catch {}
+}
+['input', 'change', 'click'].forEach(t => addEventListener(t, () => { clearTimeout(tm); tm = setTimeout(saveParams, 400); }, true));
+$('clr').onclick = async () => {
+  if (!confirm('保存した設定とファイルをすべて消します。よろしいですか？')) return;
+  ready = false; clearTimeout(tm);
+  try { localStorage.removeItem(KEY); await idb('readwrite', s => s.clear()); } catch {}
+  location.reload();
+};
+$('stx').oninput = $('stz').oninput = $('sty').oninput = standPos;
+$('stc').onchange = () => { $('sty').disabled = !$('stc').checked; standPos(); };   // オフの間は高さ調整を無視（値は残る）
+$('stR').onclick = () => { $('stx').value = 0; $('stz').value = 0; $('sty').value = 0; standPos(); if (!playing) stopMotion(); st('立ち位置を戻しました。'); };   // 止まっているときは、ポーズも初期状態に戻す
+$('cm').onclick = async () => {                          // モデル関連（読み込み中・キャッシュ・旧形式の保存）だけ消す。他の設定は残す
+  if (!confirm('読み込んだモデルとキャッシュをすべて消します（他の設定・モーション・小物は残ります）。よろしいですか？')) return;
+  ready = false; clearTimeout(tm);
+  try {
+    const keys = await idb('readonly', s => s.getAllKeys());
+    await idb('readwrite', s => { for (const k of keys) if (/^(lib:|libidx$|cur$|model$|mmd$)/.test(k)) s.delete(k); });
+  } catch {}
+  location.reload();
+};
+async function restoreModel(parts, bad) {
+  const cur = await get('cur'), e = cur && (await libIdx()).find(x => x.id === cur);
+  if (e) {
+    const fs = await get('lib:' + cur);
+    if (!fs?.length || (e.kind === 'vrm' && await isZip(fs[0]))) { await libDrop(cur); bad.push('壊れた保存モデルを破棄'); return; }   // 毎回の起動で同じエラーを出し続けないように
+    if (e.kind === 'mmd' ? await loadMMD(fs) : await loadModel(fs[0])) { curId = cur; parts.push(e.kind === 'mmd' ? 'MMDモデル' : 'モデル'); }
+    return;
+  }
+  const mm = await get('mmd');                           // ここから旧形式（キャッシュ導入前の保存）。読めたらキャッシュへ移す
+  if (mm?.length) { if (await loadMMD(mm)) { parts.push('MMDモデル'); libAdd('mmd', mm); } return; }
+  const m = await get('model'); if (!m) return;
+  if (await isZip(m)) { if (await openMMD([m])) parts.push('MMDモデル'); await idb('readwrite', s => s.delete('model')); return; }   // zipがモデル枠に入っていた場合はMMDとして救済
+  if (await loadModel(m)) { parts.push('モデル'); libAdd('vrm', [m]); }
+}
+async function restore() {
+  const parts = [], bad = [];
+  navigator.storage?.persist?.(); libRefresh();
+  try {
+    const def = await get('def'); if (def) { setDef(def); parts.push('既定の音'); }
+    const cnt = (await get('mn')) || 0; let skipped = false;
+    for (let i = 0; i < cnt; i++) {
+      const f = await get('mo:' + i), k = f ? await addMotion(f) : -1;
+      if (k < 0) { skipped = true; bad.push(f ? lastErr : 'mo:' + i + ' が保存されていません'); continue; }
+      const au2 = await get('mu:' + i);
+      if (au2) { mrec[k].audio = au2; motionAudio[k] = { url: URL.createObjectURL(au2), name: au2.name }; mark(k); }
+    }
+    if (skipped) for (let i = 0; i < mrec.length; i++) await saveMotion(i);
+    if (cnt) parts.push('モーション ' + mrec.length + '/' + cnt + '件');
+    if (saved.ms >= 0 && motions[saved.ms]) $('ms').value = saved.ms;
+    else if (motions.length) $('ms').value = motions.length - 1;
+    const bi = await get('backimg'), bm = await get('backmeta');
+    if (bi && bm) { const im = new Image(), bu = URL.createObjectURL(bi); im.src = bu; await im.decode(); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); URL.revokeObjectURL(bu); setBack(c, bm); parts.push('奥の人'); }
+    await restoreModel(parts, bad);
+    const pn = (await get('pn')) || 0;
+    for (let i = 0; i < pn; i++) { const f = await get('pf:' + i); if (f) await addProp(f, saved.props?.[i]); }
+    if (props.length) { parts.push('小物 ' + props.length + '件'); rebuildSel(0); light(); }
+    if (parts.length) st('復元: ' + parts.join(' / ') + (bad.length ? '（失敗: ' + bad[0] + '）' : ''));
+  } catch (err) { console.warn(err); st('保存データの復元に失敗: ' + (err?.message || err)); }
+  if (backCrashed) st('前回、奥の人の読み込み中に落ちたため、奥の人をオフにしました');
+  ready = true;
+}
+restore();
+
+(function frame() {
+  requestAnimationFrame(frame);
+  if (fit1()) build();                                       // 1面：画面の比が変わったら（回転・全画面・メニューの開閉）窓を作り直す
+  track(); eye.lerp(goal, 0.3);
+  let peW, pvT = null;                             // peW: 床・壁を描く本物の視点（ワールド座標）
+  if (pv) {                                                 // 立体：プレビューを実際に覗いている目を、箱の座標に直した位置
+    const Pw = val('pw'), k = val('pk'), uiH = $('ui').offsetHeight, ah = innerHeight - uiH, cm = Pw / innerWidth, Ph = ah * cm, Pf = innerHeight * cm;
+    const qU = orbitQ().clone().invert(), C = V(S.c.x / S.u, val('sh') / 2, S.c.z / S.u).multiplyScalar(k);    // 箱の中央を軸に回す
+    pg.scale.setScalar(k); pg.quaternion.copy(qU);
+    pg.position.set(0, -val('sh') * k / 2 + val('py'), -1).add(C).sub(C.clone().applyQuaternion(qU));
+    pg.updateMatrixWorld(true);
+    const pep = V(eye.x, eye.y - (val('sh') + 0.5) + Pf / 2 + 0.5 - uiH / 2 * cm, eye.z);   // 端末のカメラは画面上端にある想定
+    peW = pg.worldToLocal(pep.clone()).multiplyScalar(S.u); pvT = { Pw, Ph, uiH, ah, pep };
+  } else peW = orbitPos(M(eye, S.u));                       // 平面：ランタン回転後の視点
+  updateBeams(peW);
+  const pl = playing ? '停止' : '再生'; if (pl !== playLbl) $('play').textContent = playLbl = pl;
+  const dt = Math.min(clock.getDelta(), 0.1);
+  wander(dt); look.position.copy(peW).add(wCur);
+  if (vrm) {
+    if (playing) {
+      const hm = vrm.humanoid; hm.getNormalizedBoneNode('neck')?.quaternion.identity(); hm.getNormalizedBoneNode('head')?.quaternion.identity();   // 顔の追従は毎フレーム掛け足すので、首・頭のトラックが無いモーションでは回転が積み重なる → 基本姿勢に戻してから適用する
+      mixer.update(dt);
+    } else relax();
+    gaze(peW);
+    blink(dt);
+    breathe();
+    const sbm = vrm.springBoneManager;
+    if (playing && action && $('ph0').checked) {           // 終了間際は揺れ物を止める（最後の姿勢で干渉して吹き飛ぶのを防ぐ）
+      const dur = action.getClip().duration, rem = dur - action.time;
+      if (dur > PHYS_HOLD * 2) {
+        if (!vrmTail && vrmHold <= 0 && rem <= PHYS_HOLD) vrmTail = true;
+        else if (vrmTail && rem > PHYS_HOLD) { vrmTail = false; vrmHold = PHYS_HOLD; }   // ループで頭に戻った：開始時と同じ扱い
+      }
+    } else vrmTail = false;
+    if ((vrmHold > 0 || vrmTail) && sbm) {                 // 揺れ物だけ止めて、他（表情・視線など）は通常どおり更新
+      if (vrmHold > 0) vrmHold -= dt;
+      vrm.springBoneManager = null;
+      try { vrm.update(dt); } finally { vrm.springBoneManager = sbm; }
+      if (!vrmTail && (vrmHold <= 0 || !playing)) { vrmHold = 0; vrm.scene.updateMatrixWorld(true); sbm.reset(); }   // 今の姿勢から揺れ物を初期化して再開
+    } else vrm.update(dt);
+  } else if (mmd) {
+    try {
+      if (playing && action && mmd.helper.objects.has(mmd.mesh)) {   // 終了間際は物理を止める（最後の姿勢で干渉して吹き飛ぶのを防ぐ）
+        const dur = action.getClip().duration, rem = dur - action.time, on = $('ph0').checked;
+        if (on && dur > PHYS_HOLD * 2 && !mmd.tailHold && !(mmd.physHold > 0) && mmd.helper.enabled.physics && rem <= PHYS_HOLD) { mmd.tailHold = true; mmd.helper.enable('physics', false); }
+        else if (mmd.tailHold && (!on || rem > PHYS_HOLD)) { mmd.tailHold = false; mmd.physHold = on ? PHYS_HOLD : 0.001; }   // ループで頭に戻った（またはオフにした）：開始時と同じ扱いで再開
+      }
+      applyIk(dt); mmd.lfdt = dt; mmd.helper.update(dt);
+      if (mmd.physHold > 0) {                              // 開始直後の物理オフ：時間が来たら今の姿勢から物理を初期化して再開
+        const alive = mmd.helper.objects.has(mmd.mesh);
+        if (!alive) mmd.physHold = 0;
+        else if ((mmd.physHold -= dt) <= 0 || !playing) {
+          mmd.physHold = 0;
+          if ($('mp').checked && !ammoDead) {
+            mmd.helper.enable('physics', true);
+            const ph = mmd.helper.objects.get(mmd.mesh).physics; if (ph) unitScale(mmd.mesh, () => { ph.reset(); ph.warmup(30); });
+          }
+        }
+      }
+      if (!mmd.helper.objects.has(mmd.mesh)) relaxMMD(dt);
+    }   // 再生していない間だけ待機ポーズ
+    catch (e) {                                          // 物理が暴走して落ちた場合：途中で止まるとモデルの拡縮・親が戻らないので、元に戻して物理を切る
+      console.error(e); const m = mmd.mesh;
+      m.scale.setScalar(MMD_SCALE); if (m.parent !== rig) rig.add(m);
+      mmd.helper.enable('physics', false); $('mp').checked = false; ammoDead = true;
+      st('物理が止まりました（' + (e?.message || e) + '）。物理なしで続けます。再読み込みで物理を使えます。');
+    }
+  }
+  renderer.shadowMap.needsUpdate = true;
+  skyFrame(dt);
+  const lp = +$('lt').value;
+  if (lp === 5) {                                        // 部屋の光を空に合わせる
+    const P = skyP, h = val('sh') * S.u, sl = +$('nl').value;
+    if (sl < 3) nightMode = sl;
+    else { if (P.nt < 0.25) nArmed = true; if (nArmed && P.nt > 0.6) { nightMode = Math.floor(Math.random() * 3); nArmed = false; } }   // ランダム：夜が来るたびに引き直す
+    const M = NMODE[nightMode], w = P.nt;                // 夜に近いほど、選んだ夜の光に寄せる
+    hemi.color.copy(P.hc); hemi.groundColor.copy(P.hg); hemi.intensity = P.hi * (1 + (M.hm - 1) * w);
+    sun.color.copy(P.sc); sun.intensity = P.si * (1 + (M.sm - 1) * w); sun.position.set(S.c.x + P.sx * h, P.sy * h, S.c.z + P.sz * h);
+  }
+  const tt = performance.now(), fk = val('fk'), lampOn = lp === 3 || (lp === 5 && (lampPos || NMODE[nightMode].lamp)), nt = lp === 3 ? 1 : skyP.nt;
+  if (lampOn) {                                          // ランタン光のゆらぎ（明るさと位置）
+    const fl = 1 + fk * (0.08 * Math.sin(tt * 0.009) + 0.06 * Math.sin(tt * 0.0237) + 0.05 * Math.sin(tt * 0.0517 + 1.3) * Math.sin(tt * 0.0131));
+    lamp.intensity = 2 * fl * nt;
+    const j = 0.15 * S.u * fk;
+    lamp.position.set(lampBase.x + j * Math.sin(tt * 0.0113), lampBase.y + 1.3 * j * Math.sin(tt * 0.0171 + 1), lampBase.z + j * Math.sin(tt * 0.0097 + 2));
+    props.forEach(o => { if (o.light) o.piv.traverse(m => { const mt = m.material; if (mt?.emissive) { mt.userData.ei ??= mt.emissiveIntensity; mt.emissiveIntensity = mt.userData.ei * fl * (0.25 + 0.75 * nt); } }); });   // 発光部分も光に合わせる
+  } else lamp.intensity = 0;
+  const sk = val('sk');
+  props.forEach((o, i) => {                              // 小物の揺れ（付け根を支点にゆっくり）
+    if (o.sway && sk > 0) { o.piv.rotation.x = 0.035 * sk * Math.sin(tt * 0.0011 + i * 2); o.piv.rotation.z = 0.045 * sk * Math.sin(tt * 0.0014 + i); }
+    else o.piv.rotation.x = o.piv.rotation.z = 0;
+  });
+  const dofOn = $('df').checked && val('dk') > 0;
+  const draw = (cam, f, rt, rect) => {
+    if (dofOn) dofRender(cam, rt, rect);
+    else if (rt) { renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, cam); }
+    else { renderer.setRenderTarget(null); renderer.setViewport(...rect); renderer.setScissor(...rect); renderer.render(scene, cam); }
+  };
+  if (pv) {
+    S.F.forEach((f, i) => {                              // 目に近い側（表向き）の面だけ描く
+      const ok = setView(S.cam[i], f, peW); S.quads[i].visible = ok;
+      if (ok) draw(S.cam[i], f, S.rt[i]);
+    });
+    renderer.setRenderTarget(null);
+    renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.setScissor(0, 0, innerWidth, innerHeight); renderer.clear();
+    // 端末の画面を窓として、ユニットを覗く。端末のカメラは画面上端にある想定
+    renderer.setViewport(0, pvT.uiH, innerWidth, pvT.ah); renderer.setScissor(0, pvT.uiH, innerWidth, pvT.ah);
+    if (setView(camP, { pa: V(-pvT.Pw / 2, -pvT.Ph / 2, 0), pb: V(pvT.Pw / 2, -pvT.Ph / 2, 0), pc: V(-pvT.Pw / 2, pvT.Ph / 2, 0) }, pvT.pep, 1)) renderer.render(pscene, camP);
+  } else {
+    renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.setScissor(0, 0, innerWidth, innerHeight); renderer.clear();
+    let vis;
+    if (pm === 0) vis = S.F.map((f, i) => i).filter(i => setView(S.cam[i], S.F[i], peW))      // 実機と同じく、目に近い側の面だけ
+      .sort((i, j) => S.F[i].pa.x + S.F[i].pb.x - S.F[j].pa.x - S.F[j].pb.x);          // 左から右の順
+    else {
+      vis = pm === 1 ? S.ord : [pm - 2];                                              // 全面を番号の並びで／選んだ1面だけ
+      vis.forEach(i => { if (!setView(S.cam[i], S.F[i], peW)) setView(S.cam[i], S.F[i], faceEye(i, peW)); });
+    }
+    const rects = viewports(vis.length);
+    if (cp.on && cp.only0 && vis.length === 2) {            // 母機の画面は0番だけ全画面。1番は先に描いて切り出して送り、そのあと消して0番を描く
+      draw(S.cam[1], S.F[1], null, rects[vis.indexOf(1)]); if (dofOn) renderer.setRenderTarget(null);
+      pushFace(rects, vis);
+      renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.setScissor(0, 0, innerWidth, innerHeight); renderer.clear();
+      draw(S.cam[0], S.F[0], null, viewports(1)[0]); if (dofOn) renderer.setRenderTarget(null);
+    } else {
+      vis.forEach((i, k) => draw(S.cam[i], S.F[i], null, rects[k]));
+      if (dofOn) renderer.setRenderTarget(null);
+      pushFace(rects, vis);
+    }
+  }
+})();
+</script>
+</body>
+</html>
