@@ -168,15 +168,30 @@
 #rv{display:none;position:fixed;inset:0;width:100%;height:100%;background:#000;object-fit:contain;z-index:40}
 body.rcv #rv{display:block} body.rcv #ui{display:none}
 #cp{display:none;position:fixed;left:8px;right:8px;top:8px;z-index:60;background:rgba(20,20,28,.94);color:#eee;padding:10px;border-radius:10px;font-size:13px;max-height:96vh;overflow:auto}
-#cp.on{display:block} #cp textarea{width:100%;height:84px;margin:6px 0;font-size:11px} #cp button{margin:2px}
+#cp.on{display:block} #cp textarea{width:100%;height:76px;margin:2px 0 4px;font-size:11px;box-sizing:border-box} #cp button{margin:2px}
+  #cp h4{margin:10px 0 2px;font-size:12px;opacity:.85;font-weight:600} #cp .tb.a{background:#3a6b64} #cp .hp{font-size:12px;opacity:.85;line-height:1.6}
 </style>
 <video id="rv" autoplay muted playsinline></video>
-<div id="cp"><b>携帯2台で2面（同じWi-Fi内）</b><br>
-  QRで接続：母機は面数を2面にして「母機：コード作成」（QRが出る）。子機は「QRを読む」で母機のQRを読む→子機に応答のQRが出る→母機は「QRを読む」でそれを読む。（コード貼付でも接続可）<br>
-  <canvas id="qc" style="display:none;width:100%;max-width:520px;image-rendering:pixelated;background:#fff"></canvas>
-  <video id="qv" playsinline muted style="display:none;width:100%;max-height:50vh"></video>
-  <textarea id="cpt" placeholder="接続コード／応答コード"></textarea>
-  <button id="cpo">母機：コード作成</button><button id="cpa">子機：コード貼付→応答</button><button id="cpc">母機：応答で接続</button><button id="cpr">QRを読む</button><button id="cpq">QR表示</button><button id="cp0">母機：0番全画面 ON</button><button id="cpy">コピー</button><button id="cpe">切断</button><button id="cpx">閉じる</button>
+<div id="cp"><b>携帯2台で2面</b>
+  <div><button id="cpmH" class="tb a">母機</button><button id="cpmC" class="tb">子機</button></div>
+  <div id="cpH" class="hp">【自動接続】（ntfy.sh を使うのでネット接続が必要）<br>① 面数を2面にして「自動接続で配信開始」<br>② 出た合言葉を子機に入力<br>
+    <button id="cpn">自動接続で配信開始</button><button id="cp0">0番全画面 ON</button>
+    <div id="cpw" style="font-size:24px;letter-spacing:4px;margin:4px 2px;font-weight:600"></div></div>
+  <div id="cpC" class="hp" style="display:none">【自動接続】母機に出ている合言葉を入れて「参加」<br>
+    <input id="cpjw" placeholder="合言葉" autocapitalize="off" autocomplete="off" spellcheck="false" style="font-size:16px;width:9em;margin:4px 2px;padding:6px;border-radius:8px;border:1px solid #3a404b;background:#262a32;color:inherit"><button id="cpj">参加</button></div>
+  <details style="margin-top:8px"><summary>コピペ方式（ネットなしの予備）</summary>
+    <div id="cpH2" class="hp">① 面数を2面にして「接続コードを作る」<br>② 送信コードを「コピー」して子機へ渡す（LINE・メモ等）<br>③ 子機から返ってきた応答コードを受信欄に貼り付けて「接続」<br>
+      <button id="cpo">接続コードを作る</button><button id="cpc">接続</button></div>
+    <div id="cpC2" class="hp" style="display:none">① 母機のコードを受信欄に貼り付け<br>② 「応答コードを作る」<br>③ 送信コードを「コピー」して母機へ渡す（母機が「接続」を押すと映像が出ます）<br>
+      <button id="cpa">応答コードを作る</button></div>
+    <h4>送信コード（自分 → 相手）</h4>
+    <textarea id="cto" readonly onfocus="this.select()" placeholder="ここに作ったコードが出ます"></textarea>
+    <button id="cpy">コピー</button>
+    <h4>受信コード（相手 → 自分）</h4>
+    <textarea id="cti" placeholder="相手のコードをここに貼り付け"></textarea>
+    <button id="cpp">貼り付け</button><button id="cpk">受信欄を消す</button>
+  </details>
+  <div style="margin-top:6px"><button id="cpe">切断</button><button id="cpx">閉じる</button></div>
   <div id="cps">待機中</div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -1825,91 +1840,123 @@ function faceEye(i, pe) {                       // 裏側の面は、その面�
 // ===== 携帯どうしで2面（WebRTC・手動で接続コードを受け渡し）。母機が2番目の面を映像にして子機へ送り、子機は受けて全画面表示 =====
 const cp = { pc: null, out: null, ctx: null, on: false, only0: true };
 const setSt = t => { $('cps').textContent = t; };
+let cpES = null;                                        // ntfy.sh の受信（EventSource）
 function cpEnd(msg) {                                   // 接続の後始末：古いpcを閉じ、母機は通常表示へ、子機は映像表示を解除
-  if (scanStop) scanStop();
+  if (cpES) { cpES.close(); cpES = null; }
   if (cp.pc) { const p = cp.pc; cp.pc = null; try { p.close(); } catch (e) {} }
+  $('cpw').textContent = '';
   cp.on = false; cp.role = null;
-  document.body.classList.remove('rcv'); $('rv').srcObject = null; $('qc').style.display = 'none';
+  document.body.classList.remove('rcv'); $('rv').srcObject = null;
   setSt(msg || '待機中');
 }
 const mkPC = () => {
   const pc = new RTCPeerConnection({ iceServers: [] }); let t = 0;
   pc.onconnectionstatechange = () => {
     if (cp.pc !== pc) return; const st = pc.connectionState; setSt('接続: ' + st); clearTimeout(t);
-    if (st === 'connected') { if (cp.role === 'host') cp.on = true; if (scanStop) scanStop(); $('qc').style.display = 'none'; }   // 母機の切り出し送信は接続できてから始める
+    if (st === 'connected') { if (cp.role === 'host') cp.on = true; if (cpES) { cpES.close(); cpES = null; } }   // 母機の切り出し送信は接続できてから始める
     else if (st === 'failed' || st === 'closed') cpEnd('切断されました（' + st + '）');
     else if (st === 'disconnected') t = setTimeout(() => { if (cp.pc === pc && pc.connectionState === 'disconnected') cpEnd('切断されました'); }, 5000);   // 一瞬の途切れは待つ
   };
   return pc;
 };
 const gathered = pc => new Promise(r => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 2500); pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } }; });
-const b64u = u => btoa(String.fromCharCode(...u)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-const slim = sdp => sdp.split('\r\n').filter(l => l && !/^a=extmap/.test(l) && !(/^a=candidate/.test(l) && / tcp /i.test(l))).join('\r\n') + '\r\n';   // 不要な行を捨ててから圧縮（QRに載る長さにする）
-async function pack(d) { const bytes = new TextEncoder().encode(d.type[0] + slim(d.sdp)); return b64u(new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer())); }
-async function unpack(t) { const s = new TextDecoder().decode(await new Response(new Blob([unb64u(t.trim())]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); return { type: s[0] === 'o' ? 'offer' : 'answer', sdp: s.slice(1) }; }
-const loadScript = src => new Promise((ok, ng) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = () => ng(new Error('読み込み失敗: ' + src)); document.head.appendChild(e); });
-async function showQR(text) {                                  // コードをQRにして表示（母機・子機とも）
-  try {
-    if (!window.qrcode) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js');
-    const q = qrcode(0, 'L'); q.addData(text, 'Byte'); q.make();
-    const n = q.getModuleCount(), c = $('qc'), px = Math.max(3, Math.floor(Math.min(innerWidth * .94, innerHeight * .8) / (n + 8)));
-    c.width = c.height = px * (n + 8); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#000';
-    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect((k + 4) * px, (r + 4) * px, px, px);
-    c.style.display = 'block'; setSt('QRを表示中（コード' + text.length + '文字）。相手の「QRを読む」で読ませてください');
-  } catch (e) { setSt('QR作成失敗: ' + e.message + '（コード' + text.length + '文字）'); }
+function readSdp(t, wantOffer) {                          // 貼り付けたコード（SDP）を整えて、母機/子機の取り違えも検出
+  const sdp = t.trim().replace(/\r?\n/g, '\r\n') + '\r\n';
+  if (!/^v=0/.test(sdp)) throw new Error('受信欄が空か、コードの形式が違います');
+  const isOffer = /a=setup:actpass/.test(sdp);
+  if (wantOffer && !isOffer) throw new Error('これは母機のコードではありません。母機の送信コードを貼ってください');
+  if (!wantOffer && isOffer) throw new Error('これは母機自身のコードです。子機から返ってきた応答コードを貼ってください');
+  return sdp;
 }
-let scanStop = null;
-async function scanQR(onText) {                                // カメラでQRを読む
-  try {
-    if (!window.jsQR) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js');
-    if (scanStop) scanStop(); $('qc').style.display = 'none';
-    const v = $('qv'), st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
-    v.srcObject = st; v.style.display = 'block'; await v.play();
-    const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true }); let alive = true;
-    scanStop = () => { alive = false; st.getTracks().forEach(t => t.stop()); v.style.display = 'none'; scanStop = null; };
-    setSt('QRにカメラを向けてください');
-    const tick = () => {
-      if (!alive) return;
-      if (v.videoWidth) { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const r = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height, { inversionAttempts: 'dontInvert' }); if (r && r.data) { scanStop(); onText(r.data); return; } }
-      setTimeout(tick, 120);
-    };
-    tick();
-  } catch (e) { setSt('カメラ/読み取りエラー: ' + e.message); }
-}
+const cpView = v => { $('cpH').style.display = $('cpH2').style.display = v === 'host' ? '' : 'none'; $('cpC').style.display = $('cpC2').style.display = v === 'child' ? '' : 'none'; $('cpmH').classList.toggle('a', v === 'host'); $('cpmC').classList.toggle('a', v === 'child'); };
+$('cpmH').onclick = () => cpView('host'); $('cpmC').onclick = () => cpView('child');
 $('cpb').onclick = () => $('cp').classList.toggle('on');
-$('cp0').onclick = () => { cp.only0 = !cp.only0; $('cp0').textContent = '母機：0番全画面 ' + (cp.only0 ? 'ON' : 'OFF'); };
-$('cpq').onclick = () => { if (scanStop) scanStop(); if ($('cpt').value) showQR($('cpt').value); };
-$('cpr').onclick = () => scanQR(async t => {
-  $('cpt').value = t;
-  if (cp.role === 'host') await $('cpc').onclick();          // 母機：子機の応答を読んだら接続
-  else await $('cpa').onclick();                              // 子機：母機のQRを読んだら応答を作ってQR表示
-});
+$('cp0').onclick = () => { cp.only0 = !cp.only0; $('cp0').textContent = '0番全画面 ' + (cp.only0 ? 'ON' : 'OFF'); };
 $('cpx').onclick = () => $('cp').classList.remove('on');
-$('cpy').onclick = async () => { const b = $('cpt'); b.select(); try { await navigator.clipboard.writeText(b.value); setSt('コピーしました'); } catch (e) { document.execCommand('copy'); } };
+$('cpk').onclick = () => { $('cti').value = ''; };
+$('cpe').onclick = () => { cpEnd('切断しました'); $('cto').value = ''; $('cti').value = ''; };
+$('cpy').onclick = async () => {
+  const b = $('cto'); if (!b.value) { setSt('送信コードがまだありません'); return; }
+  b.focus(); b.select();
+  try { await navigator.clipboard.writeText(b.value); setSt('コピーしました（' + b.value.length + '文字）'); }
+  catch (e) { setSt(document.execCommand('copy') ? 'コピーしました（' + b.value.length + '文字）' : 'コピーできませんでした。送信欄を長押ししてコピーしてください'); }
+};
+$('cpp').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); $('cti').value = t; setSt('貼り付けました（' + t.length + '文字）'); }
+  catch (e) { $('cti').focus(); setSt('貼り付けボタンが使えませんでした。受信欄を長押しして貼り付けてください'); }
+};
+async function hostOffer() {                                // 母機：映像canvas・接続を用意して、接続コード（offer）のSDPを返す（コピペ・自動接続で共通）
+  if (S.N !== 2) throw new Error('先に面数を2面にしてください');
+  cpEnd();                                                   // やり直し時は古い接続を閉じる
+  pm = 1; setPmLabel();                                      // 母機は2面を並べて描く。1番の面だけ切り出して送る
+  cp.out = document.createElement('canvas'); cp.out.width = 640; cp.out.height = 360; cp.ctx = cp.out.getContext('2d');
+  cp.pc = mkPC(); cp.role = 'host'; const ms = cp.out.captureStream(30); ms.getTracks().forEach(t => cp.pc.addTrack(t, ms));
+  const vp8 = RTCRtpSender.getCapabilities('video').codecs.filter(c => /VP8/i.test(c.mimeType)); if (vp8.length) cp.pc.getTransceivers()[0].setCodecPreferences(vp8);   // コーデックを1種類にしてコードを短くする
+  await cp.pc.setLocalDescription(await cp.pc.createOffer()); await gathered(cp.pc);
+  return cp.pc.localDescription.sdp;
+}
+async function childAnswer(offerSdp) {                       // 子機：母機のコードを受けて、応答コード（answer）のSDPを返す
+  cpEnd(); const pc = cp.pc = mkPC(), rv = $('rv');
+  cp.role = 'child'; pc.ontrack = e => { rv.srcObject = e.streams[0] || new MediaStream([e.track]); rv.play().catch(() => {}); document.body.classList.add('rcv'); $('cp').classList.remove('on'); };
+  await pc.setRemoteDescription({ type: 'offer', sdp: offerSdp }); await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
+  return pc.localDescription.sdp;
+}
+// ---- コピペ方式 ----
 $('cpo').onclick = async () => {
-  try {
-    if (S.N !== 2) { setSt('先に面数を2面にしてください'); return; }
-    cpEnd();                                                 // やり直し時は古い接続を閉じる
-    pm = 1; setPmLabel();                                    // 母機は2面を並べて描く。1番の面だけ切り出して送る
-    cp.out = document.createElement('canvas'); cp.out.width = 640; cp.out.height = 360; cp.ctx = cp.out.getContext('2d');
-    cp.pc = mkPC(); cp.role = 'host'; const ms = cp.out.captureStream(30); ms.getTracks().forEach(t => cp.pc.addTrack(t, ms));
-    const vp8 = RTCRtpSender.getCapabilities('video').codecs.filter(c => /VP8/i.test(c.mimeType)); if (vp8.length) cp.pc.getTransceivers()[0].setCodecPreferences(vp8);   // コーデックを1種類にして接続コードを短くする
-    await cp.pc.setLocalDescription(await cp.pc.createOffer()); await gathered(cp.pc);
-    $('cpt').value = await pack(cp.pc.localDescription); await showQR($('cpt').value);
-  } catch (e) { setSt('エラー: ' + e.message); }
+  try { const t = await hostOffer(); $('cto').value = t; setSt('接続コードを作りました（' + t.length + '文字）。「コピー」して子機へ渡してください'); }
+  catch (e) { setSt('エラー: ' + e.message); }
 };
 $('cpa').onclick = async () => {
+  try { const t = await childAnswer(readSdp($('cti').value, true)); $('cto').value = t; setSt('応答コードを作りました（' + t.length + '文字）。「コピー」して母機へ渡し、母機で「接続」を押してもらってください'); }
+  catch (e) { setSt('エラー: ' + e.message); }
+};
+$('cpc').onclick = async () => {
   try {
-    cpEnd(); const pc = cp.pc = mkPC(), rv = $('rv');
-    cp.role = 'child'; pc.ontrack = e => { rv.srcObject = e.streams[0] || new MediaStream([e.track]); rv.play().catch(() => {}); document.body.classList.add('rcv'); $('cp').classList.remove('on'); };
-    await pc.setRemoteDescription(await unpack($('cpt').value)); await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
-    $('cpt').value = await pack(pc.localDescription); await showQR($('cpt').value);
+    if (!cp.pc || cp.role !== 'host') { setSt('先に「接続コードを作る」を押してください'); return; }
+    await cp.pc.setRemoteDescription({ type: 'answer', sdp: readSdp($('cti').value, false) }); setSt('接続中…');
   } catch (e) { setSt('エラー: ' + e.message); }
 };
-$('cpc').onclick = async () => { try { if (!cp.pc) { setSt('先に「母機：コード作成」を押してください'); return; } await cp.pc.setRemoteDescription(await unpack($('cpt').value)); setSt('接続中…'); } catch (e) { setSt('エラー: ' + e.message); } };
+// ---- 自動接続（ntfy.sh 経由。合言葉＝トピック名。コードは毎回ランダムに作る） ----
+const NTFY = 'https://ntfy.sh/vrml-';
+const newWord = () => { const c = 'abcdefghjkmnpqrstuvwxyz23456789', a = crypto.getRandomValues(new Uint8Array(8)); return Array.from(a, v => c[v % c.length]).join(''); };
+async function ntfyPub(word, o) {
+  const body = JSON.stringify(o);
+  if (new TextEncoder().encode(body).length > 4000) throw new Error('コードが長すぎて自動接続に載りません（上限4096バイト）。コピペ方式を使ってください');
+  const r = await fetch(NTFY + word, { method: 'POST', body }); if (!r.ok) throw new Error('ntfy.sh への送信に失敗しました（' + r.status + '）');
+}
+function ntfySub(word, type, waitMsg, onSdp) {               // 相手のコードを待つ（since=all：先に送られた分も受け取る）
+  if (cpES) cpES.close();
+  const es = cpES = new EventSource(NTFY + word + '/sse?since=all');
+  es.onopen = () => { if (cpES === es) setSt(waitMsg); };
+  es.onmessage = e => { try { const o = JSON.parse(JSON.parse(e.data).message); if (o.t === type && o.sdp) onSdp(o.sdp); } catch (_) {} };
+  es.onerror = () => { if (cpES === es) setSt('ntfy.sh につなげません。ネット接続を確認してください（自動で再試行します）'); };
+  return es;
+}
+$('cpn').onclick = async () => {                             // 母機：自動接続で配信開始
+  try {
+    const sdp = await hostOffer(), w = newWord(); let done = false;
+    $('cpw').textContent = w;
+    ntfySub(w, 'answer', '合言葉を子機に入力して「参加」を押してください。待機中…', async a => {
+      if (done || !cp.pc) return; done = true; if (cpES) { cpES.close(); cpES = null; }
+      try { await cp.pc.setRemoteDescription({ type: 'answer', sdp: a }); setSt('接続中…'); } catch (e) { setSt('エラー: ' + e.message); }
+    });
+    await ntfyPub(w, { t: 'offer', sdp });
+  } catch (e) { setSt('エラー: ' + e.message); }
+};
+$('cpj').onclick = async () => {                             // 子機：合言葉で参加
+  try {
+    const w = $('cpjw').value.trim().toLowerCase().replace(/^vrml-/, '');
+    if (!/^[a-z0-9]{6,}$/.test(w)) { setSt('合言葉を入れてください（母機に出ている文字）'); return; }
+    cpEnd(); let done = false;
+    const es = ntfySub(w, 'offer', '母機を探しています…', async o => {
+      if (done) return; done = true; if (cpES) { cpES.close(); cpES = null; }
+      try { setSt('母機が見つかりました。応答を作っています…'); const a = await childAnswer(o); await ntfyPub(w, { t: 'answer', sdp: a }); setSt('応答を送りました。接続中…'); }
+      catch (e) { setSt('エラー: ' + e.message); }
+    });
+    setTimeout(() => { if (!done && cpES === es) setSt('母機が見つかりません。合言葉が合っているか、母機で「自動接続で配信開始」を押したか確認してください（待機は続けています）'); }, 15000);
+  } catch (e) { setSt('エラー: ' + e.message); }
+};
 $('rv').onclick = () => $('cp').classList.toggle('on');
-$('cpe').onclick = () => cpEnd('切断しました');
 function sendFace1(peW, dofOn, draw) {                        // 母機：平面/立体・面の選択に関係なく、1番の面を描いて切り出して送る
   if (!cp.on || S.N !== 2) return;
   if (!setView(S.cam[1], S.F[1], peW)) setView(S.cam[1], S.F[1], faceEye(1, peW));
