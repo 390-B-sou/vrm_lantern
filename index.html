@@ -82,7 +82,7 @@
     <span class="s">面の幅<input type="range" id="sw" min="4" max="12" step="0.1" value="7"></span>
     <span class="s">面の高さ<input type="range" id="sh" min="5" max="16" step="0.1" value="13"></span>
     <span class="s">身長<input type="range" id="ch" min="5" max="20" step="0.5" value="11"></span>
-    <span class="s">角の開き(2面)<input type="range" id="an" min="60" max="150" step="1" value="90"></span>
+    <span class="s">角の開き(2面)<input type="range" id="an" min="60" max="150" step="1" value="90"><b id="anv" style="display:inline-block;min-width:3.4em;margin-left:6px">90°</b></span>
     <span class="s">端末幅<input type="range" id="pw" min="4" max="10" step="0.1" value="7"></span>
     <span class="s">箱の倍率<input type="range" id="pk" min="0.3" max="1.2" step="0.05" value="0.6"></span>
     <span class="s">窓の上下の枠(mm)<input type="range" id="frm" min="0" max="15" step="0.5" value="5"></span>
@@ -192,7 +192,7 @@ body.rcv #rv{display:block} body.rcv #ui{display:none}
     <button id="cpp">貼り付け</button><button id="cpk">受信欄を消す</button>
   </details>
   <div style="margin-top:6px"><button id="cpe">切断</button><button id="cpx">閉じる</button></div>
-  <div id="cps">待機中</div></div>
+  <div id="cps">待機中</div><div id="cpd" class="hp"></div></div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -584,6 +584,7 @@ function makeFaces(N, w, g, up) {
 }
 
 function build() {
+  $('anv').textContent = val('an') + '°';
   const u = bodyH / val('ch'), w = val('sw') * u, h = val('sh') * u, g = val('an') / 2 * Math.PI / 180, N = +$('nf').value;
   const up = V(0, h, 0), { F, c, r } = makeFaces(N, w, g, up);
   Object.assign(S, { u, w, g, F, c, r, N });
@@ -1771,27 +1772,42 @@ $('cam').onclick = async () => {
     video = document.createElement('video'); video.playsInline = true; video.muted = true;
     video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
     await video.play();
-    if (!lm) {
-      const { FaceLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
-      const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-      lm = await FaceLandmarker.createFromOptions(fs, { runningMode: 'VIDEO', numFaces: 1,
-        baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: 'GPU' } });
-    }
+    await ensureLM();
     tracking = true; $('cam').textContent = 'カメラ停止';
     st('顔を追跡中。カメラは正面の面の上端付近にある想定です。');
   } catch (err) { st('カメラ開始失敗: ' + err.message); }
 };
 
+const meas = [null, null];                          // カメラ基準の目の位置の最新計測。0=母機自身 1=子機（dx,dy,dz:cm, q:信頼度0〜1, t:時刻）
+function faceMeasure(f, vd) {                       // 顔のランドマーク → カメラ基準の目の位置。dx=面の右向き(vr)方向 dy=上 dz=面の正面(vn)方向への距離
+  const a = f[33], b = f[263], cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+  const span = Math.hypot((b.x - a.x) * vd.videoWidth, (b.y - a.y) * vd.videoHeight) / vd.videoWidth;
+  const tanH = Math.tan(30 * Math.PI / 180);                       // 水平画角60°と仮定
+  const z = THREE.MathUtils.clamp(4.5 / (span * tanH), 12, 80);   // 目尻間隔9cm
+  const wM = 2 * z * tanH, hM = wM * vd.videoHeight / vd.videoWidth;
+  const m = Math.max(Math.abs(cx - .5), Math.abs(cy - .5)) * 2;   // 0=画像の中央 1=端
+  return { dx: -(cx - .5) * wM, dy: -(cy - .5) * hM, dz: z, q: THREE.MathUtils.clamp((1 - m) / 0.5, 0.05, 1) };   // 中央寄りほど信頼、端に寄るほど弱める
+}
 function track() {
   if (!tracking || video.readyState < 2 || video.currentTime === lastT) return;
   lastT = video.currentTime;
   const f = lm.detectForVideo(video, performance.now()).faceLandmarks?.[0]; if (!f) return;
-  const a = f[33], b = f[263], cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-  const span = Math.hypot((b.x - a.x) * video.videoWidth, (b.y - a.y) * video.videoHeight) / video.videoWidth;
-  const tanH = Math.tan(30 * Math.PI / 180);                       // 水平画角60°と仮定
-  const z = THREE.MathUtils.clamp(4.5 / (span * tanH), 12, 80);   // 目尻間隔9cm
-  const wM = 2 * z * tanH, hM = wM * video.videoHeight / video.videoWidth;
-  goal.set(-(cx - .5) * wM, val('sh') + 0.5 - (cy - .5) * hM, z);
+  const m = faceMeasure(f, video); m.t = performance.now(); meas[0] = m;
+  if (!fusing()) goal.set(m.dx, val('sh') + 0.5 + m.dy, m.dz);
+}
+// ---- 2台のカメラの統合（母機・接続中・2面のとき）。各面の上端中央にカメラがあり、面の正面を向いている想定 ----
+const fusing = () => cp.on && cp.role === 'host' && S.N === 2;
+const uiT = { t: 0 };
+function camToWorld(i, m) {                         // i番の面のカメラから見た目の位置 → 箱の座標（cm）
+  const f = S.F[i], { vr, vu, vn } = basis(f), c = A(f.pa, f.pb).multiplyScalar(0.5 / S.u);
+  c.y += val('sh') + 0.5;                                          // 面の上端より0.5cm上
+  return c.addScaledVector(vr, m.dx).addScaledVector(vu, m.dy).addScaledVector(vn, m.dz);
+}
+function fuse() {
+  const now = performance.now(), acc = V(0, 0, 0), ok = [false, false]; let sw = 0;
+  meas.forEach((m, i) => { if (m && now - m.t < 400) { acc.addScaledVector(camToWorld(i, m), m.q); sw += m.q; ok[i] = true; } });   // 400msより古い計測は使わない
+  if (sw > 0) goal.copy(acc.divideScalar(sw));                     // 見えているカメラの重み付き平均。片方だけならそれを使う（両方見えないときは直前の位置のまま）
+  if (now - uiT.t > 400) { uiT.t = now; $('cpd').textContent = '追跡  母機カメラ: ' + (ok[0] ? '見えている' : '×') + ' / 子機カメラ: ' + (ok[1] ? '見えている' : '×'); }
 }
 
 // ---- 斜め射影（一般形）：面の3隅と目の位置から視錐台を作る ----
@@ -1841,19 +1857,25 @@ function faceEye(i, pe) {                       // 裏側の面は、その面�
 const cp = { pc: null, out: null, ctx: null, on: false, only0: true };
 const setSt = t => { $('cps').textContent = t; };
 let cpES = null;                                        // ntfy.sh の受信（EventSource）
-function cpEnd(msg) {                                   // 接続の後始末：古いpcを閉じ、母機は通常表示へ、子機は映像表示を解除
+function cpEnd(msg, keepCam) {                                   // 接続の後始末：古いpcを閉じ、母機は通常表示へ、子機は映像表示を解除
   if (cpES) { cpES.close(); cpES = null; }
   if (cp.pc) { const p = cp.pc; cp.pc = null; try { p.close(); } catch (e) {} }
   $('cpw').textContent = '';
   cp.on = false; cp.role = null;
   document.body.classList.remove('rcv'); $('rv').srcObject = null;
+  ct.on = false; cp.dc = null; meas[1] = null; $('cpd').textContent = '';
+  if (!keepCam && ct.v) { ct.v.srcObject.getTracks().forEach(t => t.stop()); ct.v = null; ct.ready = false; }     // 子機の前面カメラを止める
   setSt(msg || '待機中');
 }
 const mkPC = () => {
   const pc = new RTCPeerConnection({ iceServers: [] }); let t = 0;
   pc.onconnectionstatechange = () => {
     if (cp.pc !== pc) return; const st = pc.connectionState; setSt('接続: ' + st); clearTimeout(t);
-    if (st === 'connected') { if (cp.role === 'host') cp.on = true; if (cpES) { cpES.close(); cpES = null; } }   // 母機の切り出し送信は接続できてから始める
+    if (st === 'connected') {
+      if (cpES) { cpES.close(); cpES = null; }
+      if (cp.role === 'host') cp.on = true;
+      else if (cp.role === 'child') { document.body.classList.add('rcv'); $('cp').classList.remove('on'); ct.on = true; }   // 子機：接続できてから映像表示に切り替える（コピペ方式で応答コードを見られるように）
+    }   // 母機の切り出し送信は接続できてから始める
     else if (st === 'failed' || st === 'closed') cpEnd('切断されました（' + st + '）');
     else if (st === 'disconnected') t = setTimeout(() => { if (cp.pc === pc && pc.connectionState === 'disconnected') cpEnd('切断されました'); }, 5000);   // 一瞬の途切れは待つ
   };
@@ -1885,6 +1907,33 @@ $('cpp').onclick = async () => {
   try { const t = await navigator.clipboard.readText(); $('cti').value = t; setSt('貼り付けました（' + t.length + '文字）'); }
   catch (e) { $('cti').focus(); setSt('貼り付けボタンが使えませんでした。受信欄を長押しして貼り付けてください'); }
 };
+const ct = { on: false, v: null, ready: false, last: -1, ui: 0 };       // 子機：自分の前面カメラの顔追跡
+const setDt = t => { $('cpd').textContent = t; };
+async function ensureLM() {
+  if (lm) return;
+  const { FaceLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+  const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  lm = await FaceLandmarker.createFromOptions(fs, { runningMode: 'VIDEO', numFaces: 1,
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: 'GPU' } });
+}
+async function childCamStart() {                             // 子機：接続を待つ間に、前面カメラと顔検出モデルを準備しておく
+  if (ct.v) return;
+  try {
+    setDt('子機カメラを準備中…');
+    const v = document.createElement('video'); v.playsInline = true; v.muted = true;
+    v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+    await v.play(); ct.v = v; await ensureLM(); ct.ready = true; setDt('子機カメラ: 準備できました');
+  } catch (e) { setDt('子機カメラ: 使えません（' + e.message + '）'); }
+}
+function childTick() {                                       // 子機：受信映像を出している間も顔を追跡して、結果だけを母機へ送る
+  if (!ct.on || !ct.ready || ct.v.readyState < 2 || ct.v.currentTime === ct.last) return;
+  ct.last = ct.v.currentTime;
+  const f = lm.detectForVideo(ct.v, performance.now()).faceLandmarks?.[0], now = performance.now(), dc = cp.dc;
+  if (now - ct.ui > 500) { ct.ui = now; setDt('子機カメラ: ' + (f ? '顔を追跡中' : '顔が見えません')); }
+  if (!f || !dc || dc.readyState !== 'open') return;
+  const m = faceMeasure(f, ct.v);
+  dc.send(JSON.stringify({ x: +m.dx.toFixed(2), y: +m.dy.toFixed(2), z: +m.dz.toFixed(2), q: +m.q.toFixed(2) }));
+}
 async function hostOffer() {                                // 母機：映像canvas・接続を用意して、接続コード（offer）のSDPを返す（コピペ・自動接続で共通）
   if (S.N !== 2) throw new Error('先に面数を2面にしてください');
   cpEnd();                                                   // やり直し時は古い接続を閉じる
@@ -1892,12 +1941,15 @@ async function hostOffer() {                                // 母機：映像ca
   cp.out = document.createElement('canvas'); cp.out.width = 640; cp.out.height = 360; cp.ctx = cp.out.getContext('2d');
   cp.pc = mkPC(); cp.role = 'host'; const ms = cp.out.captureStream(30); ms.getTracks().forEach(t => cp.pc.addTrack(t, ms));
   const vp8 = RTCRtpSender.getCapabilities('video').codecs.filter(c => /VP8/i.test(c.mimeType)); if (vp8.length) cp.pc.getTransceivers()[0].setCodecPreferences(vp8);   // コーデックを1種類にしてコードを短くする
+  cp.dc = cp.pc.createDataChannel('trk', { ordered: false, maxRetransmits: 0 });            // 子機の顔追跡の結果を受ける通路（古い値は捨てて遅延を溜めない）
+  cp.dc.onmessage = e => { try { const o = JSON.parse(e.data); if ([o.x, o.y, o.z, o.q].every(Number.isFinite)) meas[1] = { dx: o.x, dy: o.y, dz: o.z, q: o.q, t: performance.now() }; } catch (_) {} };
   await cp.pc.setLocalDescription(await cp.pc.createOffer()); await gathered(cp.pc);
   return cp.pc.localDescription.sdp;
 }
 async function childAnswer(offerSdp) {                       // 子機：母機のコードを受けて、応答コード（answer）のSDPを返す
-  cpEnd(); const pc = cp.pc = mkPC(), rv = $('rv');
-  cp.role = 'child'; pc.ontrack = e => { rv.srcObject = e.streams[0] || new MediaStream([e.track]); rv.play().catch(() => {}); document.body.classList.add('rcv'); $('cp').classList.remove('on'); };
+  cpEnd(undefined, true); const pc = cp.pc = mkPC(), rv = $('rv');
+  cp.role = 'child'; pc.ondatachannel = e => { cp.dc = e.channel; };
+  pc.ontrack = e => { rv.srcObject = e.streams[0] || new MediaStream([e.track]); rv.play().catch(() => {}); };
   await pc.setRemoteDescription({ type: 'offer', sdp: offerSdp }); await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
   return pc.localDescription.sdp;
 }
@@ -1907,7 +1959,7 @@ $('cpo').onclick = async () => {
   catch (e) { setSt('エラー: ' + e.message); }
 };
 $('cpa').onclick = async () => {
-  try { const t = await childAnswer(readSdp($('cti').value, true)); $('cto').value = t; setSt('応答コードを作りました（' + t.length + '文字）。「コピー」して母機へ渡し、母機で「接続」を押してもらってください'); }
+  try { const sdp = readSdp($('cti').value, true); childCamStart(); const t = await childAnswer(sdp); $('cto').value = t; setSt('応答コードを作りました（' + t.length + '文字）。「コピー」して母機へ渡し、母機で「接続」を押してもらってください'); }
   catch (e) { setSt('エラー: ' + e.message); }
 };
 $('cpc').onclick = async () => {
@@ -1947,7 +1999,7 @@ $('cpj').onclick = async () => {                             // 子機：合言�
   try {
     const w = $('cpjw').value.trim().toLowerCase().replace(/^vrml-/, '');
     if (!/^[a-z0-9]{6,}$/.test(w)) { setSt('合言葉を入れてください（母機に出ている文字）'); return; }
-    cpEnd(); let done = false;
+    cpEnd(); childCamStart(); let done = false;
     const es = ntfySub(w, 'offer', '母機を探しています…', async o => {
       if (done) return; done = true; if (cpES) { cpES.close(); cpES = null; }
       try { setSt('母機が見つかりました。応答を作っています…'); const a = await childAnswer(o); await ntfyPub(w, { t: 'answer', sdp: a }); setSt('応答を送りました。接続中…'); }
@@ -2223,9 +2275,9 @@ restore();
 
 (function frame() {
   requestAnimationFrame(frame);
-  if (document.body.classList.contains('rcv')) return;     // 子機：受信映像を出している間は描画・物理・追跡を止める（発熱・電池対策）
+  if (document.body.classList.contains('rcv')) { childTick(); return; }     // 子機：受信映像を出している間は描画・物理を止める（発熱・電池対策）。顔の追跡だけ続ける
   if (fit1()) build();                                       // 1面：画面の比が変わったら（回転・全画面・メニューの開閉）窓を作り直す
-  track(); eye.lerp(goal, 0.3);
+  track(); if (fusing()) fuse(); eye.lerp(goal, 0.3);
   let peW, pvT = null;                             // peW: 床・壁を描く本物の視点（ワールド座標）
   if (pv) {                                                 // 立体：プレビューを実際に覗いている目を、箱の座標に直した位置
     const Pw = val('pw'), k = val('pk'), uiH = $('ui').offsetHeight, ah = innerHeight - uiH, cm = Pw / innerWidth, Ph = ah * cm, Pf = innerHeight * cm;
