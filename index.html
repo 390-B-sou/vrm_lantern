@@ -114,9 +114,11 @@
     <input type="color" id="rmc" value="#bcd4ff" title="逆光・光だまりの色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
     <span class="s">逆光の強さ<input type="range" id="rmi" min="0" max="3" step="0.05" value="1"></span>
     <span class="s">逆光の左右<input type="range" id="rmx" min="-1" max="1" step="0.05" value="0.5"></span>
+    <label class="s"><input type="checkbox" id="rmf" style="width:auto" checked>逆光は地面に当てない</label>
     <label class="s"><input type="checkbox" id="gfo" style="width:auto" checked>背景の光だまり</label>
     <span class="s">光だまりの強さ<input type="range" id="gfi" min="0" max="1.5" step="0.05" value="0.35"></span>
     <span class="s">光だまりの大きさ<input type="range" id="gfs" min="0.5" max="3" step="0.05" value="1"></span>
+    <span class="s">光だまり: モデルから後ろへ(cm)<input type="range" id="gfz" min="0" max="30" step="0.5" value="5"></span>
   </div></details>
   <details id="d6"><summary>背景・床</summary><div class="g">
     <select id="fl"><option value="0">床: なし</option><option value="1">床: 市松</option><option value="2">床: 木目</option><option value="3">床: 石畳</option><option value="4">床: 芝</option><option value="5">床: 無地</option></select>
@@ -185,6 +187,13 @@
     <label class="s"><input type="checkbox" id="fyw" style="width:auto">羽</label>
     <label class="s"><input type="checkbox" id="fyt" style="width:auto" checked>きらめく粉</label>
     <label class="s"><input type="checkbox" id="fyb" style="width:auto">夜だけ</label>
+  </div></details>
+  <details id="d11"><summary>表情</summary><div class="g">
+    <select id="exs"><option value="">表情: 標準</option></select>
+    <span class="s">強さ<input type="range" id="exv" min="0" max="1" step="0.05" value="1"></span>
+    <label class="s"><input type="checkbox" id="exa" style="width:auto" checked>自動で変える</label>
+    <span class="s">変わる間隔(秒)<input type="range" id="exi" min="3" max="30" step="1" value="10"></span>
+    <label class="s"><input type="checkbox" id="exl" style="width:auto" checked>表情中も視線を動かす</label>
   </div></details>
   <details id="d8"><summary>保存</summary><div class="g">
     <button id="cm">モデルを全部消す</button>
@@ -298,11 +307,12 @@ function rimApply() {
   if (!S.F) return;
   const u = S.u, bx = rig.position.x, bz = rig.position.z, by = bodyH, col = $('rmc').value, on = $('rmo').checked, gon = $('gfo').checked;
   rim.visible = on;
-  if (on) { rim.color.set(col); rim.intensity = 1.5 * val('rmi'); rim.position.set(bx + val('rmx') * 0.8 * by, 1.4 * by, bz - 0.9 * by); rim.target.position.set(bx, 0.55 * by, bz); }
+  if (on) { rim.color.set(col); rim.intensity = 1.5 * val('rmi'); rim.position.set(bx + val('rmx') * 0.8 * by, $('rmf').checked ? 0.55 * by : 1.4 * by, bz - 0.9 * by);   // 地面に当てない＝真横から（床との角度が0なので床は照らされない）
+   rim.target.position.set(bx, 0.55 * by, bz); }
   rimGlow.visible = gon;
-  if (gon) { rimGlow.material.color.set(col); rimGlow.material.opacity = val('gfi'); const gs = val('gfs'), wz = Math.min(...boxPoly().map(p => p.z)) + 0.02 * u; rimGlow.scale.set(0.6 * by * gs, 1.25 * by * gs, 1); rimGlow.position.set(bx, 0.55 * by, Math.max(wz, bz - 0.45 * by)); }   // 体の形に近い縦長。後ろ髪やスカートより奥（奥の壁の手前まで）に置く
+  if (gon) { rimGlow.material.color.set(col); rimGlow.material.opacity = val('gfi'); const gs = val('gfs'), wz = Math.min(...boxPoly().map(p => p.z)) + 0.02 * u; rimGlow.scale.set(0.6 * by * gs, 1.25 * by * gs, 1); rimGlow.position.set(bx, 0.55 * by, Math.max(wz, bz - val('gfz') * u)); }   // 体の形に近い縦長。後ろ髪やスカートより奥（奥の壁の手前まで）に置く
 }
-['rmo', 'rmc', 'rmi', 'rmx', 'gfo', 'gfi', 'gfs'].forEach(id => $(id).oninput = $(id).onchange = rimApply);
+['rmo', 'rmc', 'rmi', 'rmx', 'rmf', 'gfo', 'gfi', 'gfs', 'gfz'].forEach(id => $(id).oninput = $(id).onchange = rimApply);
 
 // ---- 床と背景のプリセット（模様はコードで生成。画像ファイルは使わない） ----
 const tx = {}, T = (k, f) => tx[k] ||= f();
@@ -878,6 +888,59 @@ function fyTick(dt, eye) {
 ['fyn', 'fyx'].forEach(id => $(id).oninput = $(id).onchange = fyBuild);
 ['fyc', 'fyd'].forEach(id => $(id).oninput = $(id).onchange = fyColor);
 
+// ---- 表情の選択：モデルが持つ表情（VRM）やモーフ（MMD）を選択肢にする。「標準」は何もしない。切り替えはなめらかに ----
+const EX_SKIP = new Set(['blink', 'blinkLeft', 'blinkRight', 'lookUp', 'lookDown', 'lookLeft', 'lookRight', 'aa', 'ih', 'ou', 'ee', 'oh', 'neutral']);   // まばたき・視線・口の形・標準は表情の選択肢に出さない
+const ex = { name: '', v: 0, amp: 1, oldName: '', oldV: 0, pool: [], cd: 2, last: '' };
+const EX_POS = /にこ|笑|喜|楽|微笑|ほほえ|照れ|はにかみ|なごみ|やさし|優し|驚|びっくり|困/;   // MMDの自動で使うモーフ（穏やかな表情だけ。目や口の形は使わない）
+let exModel;
+function exList() {
+  const em = vrm && vrm.expressionManager;
+  if (em) return (em.expressionMap ? Object.keys(em.expressionMap) : (em.expressions || []).map(e => e.expressionName)).filter(n => !EX_SKIP.has(n));
+  return mmd ? Object.keys(mmd.mesh.morphTargetDictionary || {}) : [];
+}
+function exSet(n, v) {
+  if (vrm && vrm.expressionManager) vrm.expressionManager.setValue(n, v);
+  else if (mmd) { const i = mmd.mesh.morphTargetDictionary && mmd.mesh.morphTargetDictionary[n]; if (i !== undefined) mmd.mesh.morphTargetInfluences[i] = v; }
+}
+function exGo(name, amp) {                                  // 表情を name へ移す（今の表情はゆっくり消す）
+  if (ex.oldName) exSet(ex.oldName, 0);
+  if (ex.name) { ex.oldName = ex.name; ex.oldV = ex.v * ex.amp * val('exv'); } else ex.oldName = '';
+  ex.name = name; ex.v = 0; ex.amp = amp;
+}
+function exRefresh(key) {                                   // モデルが替わったら、選択肢を作り直して標準に戻す
+  exModel = key; ex.name = ex.oldName = ''; ex.v = ex.oldV = 0; ex.amp = 1; ex.cd = 2;
+  const sel = $('exs'), names = key ? exList() : [];
+  ex.pool = vrm ? names.filter(n => !/^(angry|sad)$/i.test(n)) : names.filter(n => EX_POS.test(n));   // 自動で使う表情（VRMは怒り・悲しみ以外、MMDは穏やかな名前のモーフ）
+  sel.innerHTML = ''; sel.add(new Option(names.length ? '表情: 標準' : '表情: 標準（このモデルには表情がありません）', ''));
+  names.forEach(n => sel.add(new Option(n, n))); sel.value = ''; sel.disabled = !names.length; $('exa').disabled = !ex.pool.length; exLook();
+}
+function exTick(dt) {
+  const key = vrm || (mmd && mmd.mesh) || null; if (key !== exModel) exRefresh(key);
+  if (!key) return;
+  const k = Math.min(1, dt * 6);
+  if ($('exs').value === '') {                              // 手動で選んでいない間は、自動モードに従う
+    if ($('exa').checked && ex.pool.length) {
+      ex.cd -= dt;
+      if (ex.cd <= 0) {
+        const cyc = val('exi');
+        if (ex.name) { exGo('', 1); ex.cd = cyc * (0.4 + Math.random() * 0.4); }                      // 標準の顔に戻して、しばらく休む
+        else { const c = ex.pool.filter(n => n !== ex.last), n = (c.length ? c : ex.pool)[Math.floor(Math.random() * (c.length || ex.pool.length))]; ex.last = n; exGo(n, 0.55 + Math.random() * 0.45); ex.cd = cyc * (0.25 + Math.random() * 0.3); }   // 前回と違う表情を、強さを少し変えて出す
+      }
+    } else if (ex.name) exGo('', 1);
+  }
+  ex.v += ((ex.name ? 1 : 0) - ex.v) * k;
+  if (ex.oldName) { ex.oldV -= ex.oldV * k; if (ex.oldV < 0.005) { exSet(ex.oldName, 0); ex.oldName = ''; } else exSet(ex.oldName, ex.oldV); }
+  if (ex.name) exSet(ex.name, ex.v * ex.amp * val('exv'));
+}
+const exLookOrig = new WeakMap();
+function exLook() {                                         // 表情側の「出ている間は視線を止める」設定を、オンの間だけ無視する（元の設定は覚えておく）
+  const em = vrm && vrm.expressionManager; if (!em) return;
+  const on = $('exl').checked;
+  (em.expressions || []).forEach(e => { if (!exLookOrig.has(e)) exLookOrig.set(e, e.overrideLookAt); e.overrideLookAt = on ? 'none' : exLookOrig.get(e); });
+}
+$('exl').onchange = exLook;
+$('exs').onchange = () => exGo($('exs').value, 1);
+
 function standPos() {                                    // 立ち位置の調整（左右・前後。小物と同じ向き・単位）
   rig.position.set(S.c.x + val('stx') * S.u, (0.2 + ($('stc').checked ? val('sty') : 0)) * S.u, S.c.z + val('stz') * S.u);   // 高さ: モーション中の足のめり込み補正用（cm）
   rig.updateMatrixWorld(true); rimApply();
@@ -1202,13 +1265,13 @@ async function unzipModel(zip) {                         // フォルダ構成�
 }
 const mgv = () => new THREE.Vector3(0, -98 * val('mg'), 0);          // MMDの標準重力（-9.8×10）の倍率
 $('mg').oninput = () => mmd?.helper.objects.get(mmd.mesh)?.physics?.setGravity(mgv());
-$('mgr').oninput = () => { if (!mmd) return; mmd.clips.clear(); st('接地補正を変更：次の再生から反映'); };   // VRMAもVMDも作り直す（VMDは読み込み済みの元データから）   // VRMA由来のクリップだけ作り直す
-$('mxg').oninput = () => { if (!mmd) return; mmd.clips.clear(); st('足の交差防止を変更：次の再生から反映'); };
+$('mgr').oninput = () => { if (vrm) vmdClips.delete(vrm); if (!mmd) return; mmd.clips.clear(); st('接地補正を変更：次の再生から反映'); };   // VRMAもVMDも作り直す（VMDは読み込み済みの元データから）   // VRMA由来のクリップだけ作り直す
+$('mxg').oninput = () => { if (vrm) vmdClips.delete(vrm); if (!mmd) return; mmd.clips.clear(); st('足の交差防止を変更：次の再生から反映'); };
 $('mpq').oninput = $('mlc').oninput = () => mmd && applyPhys(mmd);
 $('mb').oninput = () => mmd && [].concat(mmd.mesh.material).forEach(m => { if (m.emissiveMap) m.emissiveIntensity = val('mb'); });
 // ---- モデルのキャッシュ：最近読み込んだモデルを IndexedDB に残し、プルダウンから選び直せる ----
 // 'libidx' = 一覧 [{id,kind,name,size,t}]、'lib:<id>' = File の配列、'cur' = 今使っているモデルの id
-const LIB_MAX = 5;                                      // 種類（VRM / MMD）ごとに残す数。超えたら古いものから消える
+const LIB_MAX = 10;                                      // 種類（VRM / MMD）ごとに残す数。超えたら古いものから消える
 let curId = null;
 const isZip = async f => { const b = new Uint8Array(await f.slice(0, 2).arrayBuffer()); return b[0] === 0x50 && b[1] === 0x4b; };   // 先頭が "PK" ならzip（拡張子は当てにしない）
 const libIdx = async () => (await get('libidx')) || [];
@@ -1746,7 +1809,126 @@ async function playMMD(i, cont) {
   action = a; cur = i; $('ms').value = i; playing = true;
   startAudio(i, cont);
 }
+
+// ---- 新規：VMD→VRM（腕・上半身はFK、脚は足IKを2ボーンIKで近似。MMDの標準的なAポーズ約35度を仮定して腕を補正）----
+function vmdToVRM(vmd,v){
+  const hu=v.humanoid, node=n=>hu.getNormalizedBoneNode(n), flip=v.meta?.metaVersion==='0';
+  const grp=(arr,k)=>{const m=new Map();for(const x of arr||[]){const n=x[k];(m.get(n)||m.set(n,[]).get(n)).push(x);}m.forEach(a=>a.sort((p,q)=>p.frameNum-q.frameNum));return m;};
+  const bones=grp(vmd.motions,'boneName'), morphs=grp(vmd.morphs,'morphName');
+  const sampler=(map,name,pos)=>{const a=map.get(name);let i=0;const A=new THREE.Quaternion(),B=new THREE.Quaternion();
+    return fr=>{if(!a)return pos?new THREE.Vector3():new THREE.Quaternion();
+      while(i<a.length-1&&a[i+1].frameNum<=fr)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(fr-k0.frameNum)/(k1.frameNum-k0.frameNum)));
+      if(pos)return new THREE.Vector3().fromArray(k0.position).lerp(new THREE.Vector3().fromArray(k1.position),t);
+      return new THREE.Quaternion().copy(A.fromArray(k0.rotation)).slerp(B.fromArray(k1.rotation),t);};};
+  const S=n=>sampler(bones,n,false), P=n=>sampler(bones,n,true);
+  const hip=S('下半身'), hip2=S('下半身'), up=S('上半身');
+  const defs=[['hips',hip],['spine',f=>hip2(f).invert().multiply(up(f))],['chest',S('上半身2')],['neck',S('首')],['head',S('頭')]];
+  const th=35*Math.PI/180, ikSides=[];
+  for(const [s,w,sg] of [['左','left',1],['右','right',-1]]){
+    const R=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(sg*Math.cos(th),-Math.sin(th),0),new THREE.Vector3(sg,0,0)), Ri=R.clone().invert();
+    const arm=n=>{const g=S(s+n);return f=>g(f).multiply(Ri);}, lim=n=>{const g=S(s+n);return f=>R.clone().multiply(g(f)).multiply(Ri);};
+    defs.push([w+'Shoulder',S(s+'肩')],[w+'UpperArm',arm('腕')],[w+'LowerArm',lim('ひじ')],[w+'Hand',lim('手首')]);
+    const ikn=[s+'足ＩＫ',s+'足IK'].find(n=>bones.has(n));   // 足IKがあればIKで解く。なければFK
+    if(ikn)ikSides.push([w,ikn]);else defs.push([w+'UpperLeg',S(s+'足')],[w+'LowerLeg',S(s+'ひざ')],[w+'Foot',S(s+'足首')]);
+  }
+  let last=0;for(const m of vmd.motions)last=Math.max(last,m.frameNum);for(const m of vmd.morphs||[])last=Math.max(last,m.frameNum);
+  const N=last+1,times=Float32Array.from({length:N},(_,i)=>i/30),tracks=[];
+  for(const [name,f] of defs){
+    const nd=node(name);if(!nd)continue;const vals=new Float32Array(N*4),prev=new THREE.Quaternion();
+    for(let i=0;i<N;i++){const r=f(i);if(flip){r.x=-r.x;r.z=-r.z;}
+      if(i&&r.dot(prev)<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev.copy(r);r.toArray(vals,i*4);}
+    tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,vals));
+  }
+  const hn=node('hips'),r0=hn?hn.position.clone():null,k=hn?MMD_SCALE*(r0.y/0.92):0;   // 腰の移動：MMD単位→m、体の大きさの比で拡縮
+  let hp=null,hq=null,lift=0;
+  if(hn){
+    const sx0=flip?-1:1,cS=P('センター'),gS=P('グルーブ'),hS=S('下半身');hp=[];hq=[];
+    for(let i=0;i<N;i++){const a=cS(i),b=gS(i);hp.push(new THREE.Vector3(r0.x+sx0*(a.x+b.x)*k,r0.y+(a.y+b.y)*k,r0.z+sx0*(a.z+b.z)*k));
+      const q=hS(i);if(flip){q.x=-q.x;q.z=-q.z;}hq.push(q);}
+    // 接地補正（lanternのMMDと同じ考え方）：モデルの脚の長さがモーションの想定と違うと、座ったときに腰が床下へ入る。股関節が床から一定の高さを保つよう、腰を持ち上げる
+    const legU=ikSides.map(([w])=>node(w+'UpperLeg')).filter(Boolean),gk=typeof val==='function'?val('mgr'):1;
+    if(legU.length&&gk>0){
+      const rad=0.08*(r0.y+legU[0].position.y)*gk,dy=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
+      for(let i=0;i<N;i++){let need=0;for(const u of legU)need=Math.max(need,rad-(hp[i].y+u.position.clone().applyQuaternion(hq[i]).y));dy[i]=need;}
+      for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dy[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必ず必要量以上になる）
+      for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
+      for(let i=1;i<N;i++){const lim=0.5*Math.max(0,hp[i].y-hp[i-1].y)+0.03*k;sm[i]=Math.max(sm[i],sm[i-1]-lim);}   // 持ち上げ量は、腰が上がるとき以外は急に戻さない
+      for(let i=0;i<N;i++){hp[i].y+=sm[i];lift=Math.max(lift,sm[i]);}
+      if(lift>1e-4&&typeof st==='function')st('接地補正（VRM）：最大 '+(lift*100).toFixed(1)+'cm 持ち上げ');
+    }
+  }
+  if(hn&&(bones.has('センター')||bones.has('グルーブ')||lift>1e-4)){
+    const vals=new Float32Array(N*3);for(let i=0;i<N;i++)hp[i].toArray(vals,i*3);
+    tracks.push(new THREE.VectorKeyframeTrack(hn.name+'.position',times,vals));
+  }
+  if(hn&&ikSides.length){   // 足IK → 2ボーンIK（足IKの位置は全ての親基準＝モデル空間。センター移動・下半身回転を含む腰の位置から解く）
+    const V=(x,y,z)=>new THREE.Vector3(x,y,z),Qn=()=>new THREE.Quaternion(),sx=flip?-1:1,fw=V(0,0,flip?-1:1);
+    const sides=ikSides.map(([w,ikn])=>{   // 足IKの目標位置（モデル空間）を全フレーム分そろえる
+      const nU=node(w+'UpperLeg'),nL=node(w+'LowerLeg'),nF=node(w+'Foot');if(!nU||!nL||!nF)return null;
+      const uL=nU.position.clone(),lL=nL.position.clone(),fL=nF.position.clone(),rest=r0.clone().add(uL).add(lL).add(fL),iP=P(ikn),tg=[];
+      for(let i=0;i<N;i++){const p=iP(i);tg.push(rest.clone().add(V(sx*p.x,p.y,sx*p.z).multiplyScalar(k)));}
+      return {ikn,nU,nL,nF,uL,lL,fL,rest,tg};
+    }).filter(Boolean);
+    // 足の交差防止（lanternのMMDと同じ考え方）：左右の足IKの間隔（左右の股関節を結ぶ向きで測る）が立ち姿の ks 倍より狭い／入れ替わるフレームだけ、左右へ押し広げる
+    const ks=typeof val==='function'?val('mxg'):0.4;
+    if(sides.length===2&&ks>0){
+      const [A,B]=sides,axAt=i=>A.uL.clone().applyQuaternion(hq[i]).sub(B.uL.clone().applyQuaternion(hq[i])).normalize();
+      const gap0=A.rest.clone().sub(B.rest).dot(A.uL.clone().sub(B.uL).normalize()),minGap=gap0*ks;
+      if(gap0>1e-6){
+        const dfc=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
+        for(let i=0;i<N;i++)dfc[i]=Math.max(0,minGap-A.tg[i].clone().sub(B.tg[i]).dot(axAt(i)));
+        for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dfc[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必要量以上になる）
+        for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
+        let top=0;
+        for(let i=0;i<N;i++)if(sm[i]>1e-6){const ax=axAt(i);A.tg[i].addScaledVector(ax,sm[i]/2);B.tg[i].addScaledVector(ax,-sm[i]/2);top=Math.max(top,sm[i]);}
+        if(top>1e-4&&typeof st==='function')st('足の交差防止（VRM）：最大 '+(top*100).toFixed(1)+'cm 押し広げ');
+      }
+    }
+    for(const {ikn,nU,nL,nF,uL,lL,fL,tg} of sides){
+      const l1=lL.length(),l2=fL.length(),d1=lL.clone().normalize(),d2=fL.clone().normalize(),iR=S(ikn);
+      const arr=[new Float32Array(N*4),new Float32Array(N*4),new Float32Array(N*4)],prev=[Qn(),Qn(),Qn()];
+      for(let i=0;i<N;i++){
+        const H=hq[i],Uw=uL.clone().applyQuaternion(H).add(hp[i]);
+        const v=tg[i].clone().sub(Uw);
+        const d=Math.min(Math.max(v.length(),Math.abs(l1-l2)*1.0001+1e-4),(l1+l2)*0.9999),vh=v.normalize();
+        const a=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-a*a));
+        const pole=fw.clone().applyQuaternion(H);pole.addScaledVector(vh,-pole.dot(vh));if(pole.lengthSq()<1e-8)pole.set(0,0,fw.z);pole.normalize();   // ひざは体の前方へ曲げる
+        const Kw=Uw.clone().addScaledVector(vh,a).addScaledVector(pole,h),Aw=Uw.clone().addScaledVector(vh,d);
+        const Qu=Qn().setFromUnitVectors(d1.clone().applyQuaternion(H),Kw.clone().sub(Uw).normalize()).multiply(H);   // 親(腰)の回転から最小の振りで合わせる
+        const Ql=Qn().setFromUnitVectors(d2.clone().applyQuaternion(Qu),Aw.clone().sub(Kw).normalize()).multiply(Qu);
+        const ir=iR(i);if(flip){ir.x=-ir.x;ir.z=-ir.z;}
+        const loc=[H.clone().invert().multiply(Qu),Qu.clone().invert().multiply(Ql),Ql.clone().invert().multiply(ir)];
+        for(let j=0;j<3;j++){const r=loc[j];if(i&&r.dot(prev[j])<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev[j].copy(r);r.toArray(arr[j],i*4);}
+      }
+      [nU,nL,nF].forEach((nd,j)=>tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,arr[j])));
+    }
+  }
+  const em=v.expressionManager,mm={'まばたき':'blink','あ':'aa','い':'ih','う':'ou','え':'ee','お':'oh','にこり':'happy','笑い':'happy','怒り':'angry','悲しい':'sad','驚き':'surprised'},done=new Set();
+  if(em)for(const [jn,en] of Object.entries(mm)){
+    const a=morphs.get(jn);if(!a||done.has(en)||!em.getExpression(en))continue;done.add(en);
+    const vals=new Float32Array(N);let i=0;
+    for(let f=0;f<N;f++){while(i<a.length-1&&a[i+1].frameNum<=f)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(f-k0.frameNum)/(k1.frameNum-k0.frameNum)));vals[f]=k0.weight+(k1.weight-k0.weight)*t;}
+    tracks.push(new THREE.NumberKeyframeTrack(em.getExpressionTrackName(en),times,vals));
+  }
+  return new THREE.AnimationClip('vmd',(N-1)/30,tracks);
+}
+// ---- VRMでVMDを再生：変換（vmdToVRM）と、指のキーがない指の軽い曲げ（relax と同じ握り・個体差）。親指は触らない ----
+const FJ = [['Index', .7], ['Middle', 1], ['Ring', 1.1], ['Little', 1.2]], FJJ = [['Proximal', .35], ['Intermediate', .5], ['Distal', .3]];
+let vmdCurl = null; const vmdClips = new WeakMap();      // vmdCurl: 曲げる指の骨の一覧／vmdClips: VRMごとの変換済みクリップ（VMDファイル→クリップ）
+function setupVmdCurl(clip) {
+  const hu = vrm.humanoid, fl = vrm.meta?.metaVersion === '0' ? -1 : 1, an = n => clip.tracks.some(t => t.name.startsWith(n + '.'));
+  vmdCurl = [];
+  for (const [side, sg] of [['left', -1], ['right', 1]]) for (const [f, m] of FJ) for (const [j, c] of FJJ) {
+    const B = hu.getNormalizedBoneNode(side + f + j); if (B && !an(B.name)) vmdCurl.push({ B, fk: fv[side + f], sp: j === 'Proximal', z: fl * sg * c * m });
+  }
+}
+function applyVmdCurl() {
+  if (!vmdCurl) return; const hc = val('hd');
+  for (const e of vmdCurl) e.B.rotation.set(0, e.sp ? e.fk.sp * hc : 0, e.z * e.fk.k * hc);
+}
+function clearVmdCurl() { if (vmdCurl) for (const e of vmdCurl) e.B.quaternion.identity(); vmdCurl = null; }
 function stopMotion() {
+  clearVmdCurl();
   au.pause(); curSrc = null;
   if (mmd) { if (mmd.helper.objects.has(mmd.mesh)) mmd.helper.remove(mmd.mesh); mmd.mesh.pose(); action = null; playing = false; return; }
   if (!vrm) return;
@@ -1815,12 +1997,7 @@ let playLbl = '再生';
 $('play').onclick = () => {
   if (playing) { stopMotion(); return; }                  // 再生中は停止
   if (!vrm && !mmd) { st('先にモデルを選んでください。'); return; }
-  let i = +$('ms').value; if (i < 0 || !motions[i]) { st('先にモーションを追加してください。'); return; }
-  if (vrm && motions[i].vmd) {                            // VRMはVMDを再生できない：順番に再生なら次のVRMAから始める
-    let j = -1; for (let k = 1; k <= motions.length; k++) { const c = (i + k) % motions.length; if (!motions[c].vmd) { j = c; break; } }
-    if (j < 0 || !$('sq').checked) { st('VMDはVRMでは再生できません（VRMAを選ぶか、MMDモデルに切り替えてください）。'); return; }
-    i = j;
-  }
+  const i = +$('ms').value; if (i < 0 || !motions[i]) { st('先にモーションを追加してください。'); return; }
   playMotion(i);
 };
 let cur = -1;
@@ -1833,11 +2010,30 @@ function startAudio(i, cont) {
   ensureGain(); setVol(val('vo')); au.play().catch(e => st('音の再生に失敗: ' + e.message));
 }
 function playMotion(i, cont) {
-  if (mmd || motions[i]?.vmd) { playMMD(i, cont); return; }
+  if (mmd || (motions[i]?.vmd && !vrm)) { playMMD(i, cont); return; }
+  if (motions[i]?.vmd) { playVrmVmd(i, cont); return; }
+  playVrmClip(i, createVRMAnimationClip(motions[i], vrm), cont);
+}
+async function playVrmVmd(i, cont) {                     // VMD → VRM：変換は初回だけ（VRMごとに保持）
+  const v = vrm, f = motions[i].vmd; let mc = vmdClips.get(v); if (!mc) vmdClips.set(v, mc = new Map());
+  let clip = mc.get(f);
+  if (!clip) {
+    st('VMDを変換中…');
+    try {
+      const url = URL.createObjectURL(f);
+      const vmd = await new Promise((ok, ng) => new MMDLoader().loadVMD(url, ok, undefined, ng)); URL.revokeObjectURL(url);
+      clip = vmdToVRM(vmd, v); mc.set(f, clip);
+    } catch (e) { console.error(e); st('VMDの変換失敗: ' + (e?.message || e)); return; }
+  }
+  if (v !== vrm) return;                                  // 変換中にモデルが替わった
+  playVrmClip(i, clip, cont, true);
+}
+function playVrmClip(i, clip, cont, isVmd) {
   const prev = playing ? action : null;
   if (!prev) stopMotion();
   cur = i; $('ms').value = i;
-  action = mixer.clipAction(createVRMAnimationClip(motions[i], vrm));
+  action = mixer.clipAction(clip);
+  clearVmdCurl(); if (isVmd) setupVmdCurl(clip);          // 前のVMDで曲げた指は戻してから、今回のクリップに指のキーがない指だけ曲げ直す
   action.setLoop(!$('sq').checked && $('lp').checked ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
   action.clampWhenFinished = true;
   action.reset().play(); playing = true;
@@ -1860,7 +2056,7 @@ function onFinished(e) {
   for (let k = 0; k < motions.length; k++) {
     n++;
     if (n >= motions.length) { if ($('lp').checked) n = 0; else { end(); return; } }
-    if (!(vrm && motions[n]?.vmd)) { const m = n; queueMicrotask(() => playMotion(m, true)); return; }   // VRMはVMDを再生できないので飛ばす
+    { const m = n; queueMicrotask(() => playMotion(m, true)); return; }
   }
   end();
 }
@@ -2332,6 +2528,30 @@ function gaze(pe) {
   else { nk?.quaternion.copy(qN); hd.quaternion.copy(qH); }
 }
 
+
+// ---- MMDの顔と目を視点へ向ける（VRMの gaze / lookAt と同じ考え方）。首・頭・目の骨を毎フレーム基本姿勢に戻してから、モーションの後に掛け足す ----
+let eY = 0, eP = 0; const qE = new THREE.Quaternion();
+function gazeBones(md) {
+  if (!md.gz) { const bn = n => md.mesh.skeleton.getBoneByName(n); md.gz = { hd: bn('頭'), nk: bn('首'), eyes: bn('両目') ? [bn('両目')] : [bn('左目'), bn('右目')].filter(Boolean) }; }
+  return md.gz;
+}
+function gazeMMDReset() {                                   // モーションに首・頭・目のキーが無くても積み重ならないように、先に基本姿勢へ
+  const md = mmd; if (!md) return; const g = gazeBones(md);
+  [g.nk, g.hd, ...g.eyes].forEach(b => b && b.quaternion.identity());
+}
+function gazeMMD(pe) {
+  const md = mmd; if (!md) return; const g = gazeBones(md); if (!g.hd) return;
+  g.hd.getWorldPosition(tmpV);
+  const d = rig.worldToLocal(pe.clone()).sub(rig.worldToLocal(tmpV.clone())), w = val('gz'), cl = THREE.MathUtils.clamp;
+  const yawR = cl(Math.atan2(d.x, d.z), -0.9, 0.9), pitR = cl(Math.atan2(d.y, Math.hypot(d.x, d.z)), -0.5, 0.5);
+  gY += (yawR * w - gY) * 0.15; gP += (pitR * w - gP) * 0.15;
+  qN.setFromEuler(eu.set(-gP * 0.4, gY * 0.4, 0)); qH.setFromEuler(eu.set(-gP * 0.6, gY * 0.6, 0));
+  if (g.nk) g.nk.quaternion.multiply(qN); g.hd.quaternion.multiply(qH);
+  const ty = cl(yawR - gY, -0.35, 0.35), tp = cl(pitR - gP, -0.25, 0.25);   // 顔で向ききれない分を、目で追う
+  eY += (ty - eY) * 0.3; eP += (tp - eP) * 0.3;
+  qE.setFromEuler(eu.set(-eP, eY, 0)); g.eyes.forEach(b => b.quaternion.multiply(qE));
+}
+
 // ---- 瞬き ----
 let nextBlink = 2, blinkT = -1;
 function blink(dt) {
@@ -2353,8 +2573,11 @@ function breathe() {
   const t = performance.now() / 1000, b = Math.sin(t * 1.5), s = Math.sin(t * 0.5);
   const k = val('br');
   qB.setFromEuler(eu.set(b * 0.012 * k, s * 0.015 * k, s * 0.01 * k));
-  if (playing) bn.quaternion.multiply(qB); else bn.quaternion.copy(qB);
+  // three.js のミキサーは、トラックの値が前フレームと同じだと骨に書き込まない。値が変わらないトラック（VMDで動かない上半身2など）に
+  // 毎フレーム掛け足すと回転が積み重なってグルグル回るので、掛けた分を次フレームのミキサー更新の前に外す
+  if (playing) { bn.quaternion.multiply(qB); brUndo = { bn, q: qB.clone().invert() }; } else { bn.quaternion.copy(qB); brUndo = null; }
 }
+let brUndo = null;
 
 // VRM0 と VRM1 の違い：VRM0 の骨は正面が -z 向き。骨ローカルで x・z 軸まわりに回すときは符号を反転する。
 function flip() { return vrm?.meta?.metaVersion === '0' ? -1 : 1; }
@@ -2567,10 +2790,11 @@ restore();
   if (vrm) {
     if (playing) {
       const hm = vrm.humanoid; hm.getNormalizedBoneNode('neck')?.quaternion.identity(); hm.getNormalizedBoneNode('head')?.quaternion.identity();   // 顔の追従は毎フレーム掛け足すので、首・頭のトラックが無いモーションでは回転が積み重なる → 基本姿勢に戻してから適用する
-      mixer.update(dt);
+      if (brUndo) { brUndo.bn.quaternion.multiply(brUndo.q).normalize(); brUndo = null; }
+      mixer.update(dt); applyVmdCurl();
     } else relax();
     gaze(peW);
-    blink(dt);
+    blink(dt); exTick(dt);
     breathe();
     const sbm = vrm.springBoneManager;
     if (playing && action && $('ph0').checked) {           // 終了間際は揺れ物を止める（最後の姿勢で干渉して吹き飛ぶのを防ぐ）
@@ -2593,7 +2817,7 @@ restore();
         if (on && dur > PHYS_HOLD * 2 && !mmd.tailHold && !(mmd.physHold > 0) && mmd.helper.enabled.physics && rem <= PHYS_HOLD) { mmd.tailHold = true; mmd.helper.enable('physics', false); }
         else if (mmd.tailHold && (!on || rem > PHYS_HOLD)) { mmd.tailHold = false; mmd.physHold = on ? PHYS_HOLD : 0.001; }   // ループで頭に戻った（またはオフにした）：開始時と同じ扱いで再開
       }
-      applyIk(dt); mmd.lfdt = dt; mmd.helper.update(dt);
+      gazeMMDReset(); applyIk(dt); mmd.lfdt = dt; mmd.helper.update(dt); exTick(dt); gazeMMD(peW);
       if (mmd.physHold > 0) {                              // 開始直後の物理オフ：時間が来たら今の姿勢から物理を初期化して再開
         const alive = mmd.helper.objects.has(mmd.mesh);
         if (!alive) mmd.physHold = 0;
