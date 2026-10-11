@@ -110,6 +110,13 @@
     <select id="lh"><option value="0">ランタン: 足下</option><option value="1" selected>ランタン: 腰</option><option value="2">ランタン: 頭上</option></select>
     <select id="nl"><option value="0">夜の光: 月</option><option value="1">夜の光: 暗い</option><option value="2">夜の光: ランタン</option><option value="3">夜の光: ランダム</option></select>
     <span class="s">炎のゆらぎ<input type="range" id="fk" min="0" max="3" step="0.1" value="1.5"></span>
+    <label class="s"><input type="checkbox" id="rmo" style="width:auto" checked>逆光（輪郭）</label>
+    <input type="color" id="rmc" value="#bcd4ff" title="逆光・光だまりの色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <span class="s">逆光の強さ<input type="range" id="rmi" min="0" max="3" step="0.05" value="1"></span>
+    <span class="s">逆光の左右<input type="range" id="rmx" min="-1" max="1" step="0.05" value="0.5"></span>
+    <label class="s"><input type="checkbox" id="gfo" style="width:auto" checked>背景の光だまり</label>
+    <span class="s">光だまりの強さ<input type="range" id="gfi" min="0" max="1.5" step="0.05" value="0.35"></span>
+    <span class="s">光だまりの大きさ<input type="range" id="gfs" min="0.5" max="3" step="0.05" value="1"></span>
   </div></details>
   <details id="d6"><summary>背景・床</summary><div class="g">
     <select id="fl"><option value="0">床: なし</option><option value="1">床: 市松</option><option value="2">床: 木目</option><option value="3">床: 石畳</option><option value="4">床: 芝</option><option value="5">床: 無地</option></select>
@@ -141,6 +148,8 @@
     <span class="s">大きさ<input type="range" id="os" min="0.2" max="3" step="0.05" value="1"></span>
     <span class="s">向き<input type="range" id="or" min="-180" max="180" step="1" value="0"></span>
     <label class="s"><input type="checkbox" id="ol" style="width:auto">光源</label>
+    <input type="color" id="olc" value="#ff9a3c" title="光の色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <span class="s">光の強さ<input type="range" id="oli" min="0.2" max="3" step="0.05" value="1"></span>
     <label class="s"><input type="checkbox" id="ot" style="width:auto">すり抜け</label>
     <label class="s"><input type="checkbox" id="ow" style="width:auto">揺れ</label>
     <button id="od">小物を外す</button>
@@ -148,6 +157,34 @@
     <span class="s">揺れの強さ<input type="range" id="sk" min="0" max="3" step="0.1" value="1"></span>
     <label class="s"><input type="checkbox" id="lc" style="width:auto" checked>脚のコライダー</label>
     <span class="s">脚コライダーの大きさ<input type="range" id="lcs" min="0.5" max="1.5" step="0.05" value="1"></span>
+  </div></details>
+  <details id="d9"><summary>粒（蛍・雪・花びら・雨）</summary><div class="g">
+    <select id="ptk"><option value="0">粒: なし</option><option value="1">粒: 蛍</option><option value="2">粒: 雪</option><option value="3">粒: 花びら</option><option value="4">粒: 雨</option></select>
+    <select id="ptw"><option value="0">場所: 箱の中</option><option value="1">場所: 窓の手前</option><option value="2" selected>場所: 両方</option></select>
+    <span class="s">数<input type="range" id="ptn" min="5" max="600" step="5" value="80"></span>
+    <span class="s">速さ<input type="range" id="pts" min="0.2" max="3" step="0.05" value="1"></span>
+    <span class="s">大きさ<input type="range" id="ptz" min="0.3" max="3" step="0.05" value="1"></span>
+    <span class="s">風(左右)<input type="range" id="ptd" min="-1" max="1" step="0.05" value="0"></span>
+    <span class="s">手前の奥行き(cm)<input type="range" id="ptf" min="3" max="40" step="1" value="12"></span>
+    <input type="color" id="ptc" value="#d9ff7a" title="粒の色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <label class="s"><input type="checkbox" id="ptb" style="width:auto">蛍は夜だけ</label>
+  </div></details>
+  <details id="d10"><summary>妖精（光る小物）</summary><div class="g">
+    <select id="fyn"><option value="0">妖精: なし</option><option value="1">妖精: 1匹</option><option value="2" selected>妖精: 2匹</option><option value="3">妖精: 3匹</option></select>
+    <span class="s">大きさ<input type="range" id="fys" min="0.15" max="3" step="0.05" value="0.6"></span>
+    <span class="s">速さ<input type="range" id="fyv" min="0.2" max="3" step="0.05" value="1"></span>
+    <span class="s">手前へはみ出す(cm)<input type="range" id="fyx" min="0" max="30" step="1" value="8"></span>
+    <span class="s">光の強さ<input type="range" id="fyl" min="0" max="3" step="0.05" value="1"></span>
+    <input type="color" id="fyc" value="#ffe9a8" title="妖精の色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <label class="s"><input type="checkbox" id="fyd" style="width:auto" checked>色をずらす</label>
+    <label class="s"><input type="checkbox" id="fyi" style="width:auto" checked>まわりを照らす</label>
+    <span class="s">緩急<input type="range" id="fyq" min="0" max="1" step="0.05" value="0.7"></span>
+    <select id="fym"><option value="1">光源: 1匹まで</option><option value="2" selected>光源: 2匹まで</option><option value="3">光源: 3匹まで</option></select>
+    <label class="s"><input type="checkbox" id="fyk" style="width:auto">点滅（ずらす）</label>
+    <span class="s">点滅の間隔(秒)<input type="range" id="fyg" min="1" max="8" step="0.25" value="3"></span>
+    <label class="s"><input type="checkbox" id="fyw" style="width:auto">羽</label>
+    <label class="s"><input type="checkbox" id="fyt" style="width:auto" checked>きらめく粉</label>
+    <label class="s"><input type="checkbox" id="fyb" style="width:auto">夜だけ</label>
   </div></details>
   <details id="d8"><summary>保存</summary><div class="g">
     <button id="cm">モデルを全部消す</button>
@@ -241,8 +278,9 @@ const scene = new THREE.Scene();
 const hemi = new THREE.HemisphereLight(0xffffff, 0x555566, 1.8); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 2); scene.add(sun, sun.target);
 const spot = new THREE.SpotLight(0xffffff, 0, 0, 0.3, 0.5, 0); scene.add(spot, spot.target);
-const lamp = new THREE.PointLight(0xff9a3c, 0, 0, 1); scene.add(lamp);
-let lampBase = new THREE.Vector3(), lampPos = null;                                    // 光源にした小物の位置（無ければ null）
+const lamp = new THREE.PointLight(0xff9a3c, 0, 0, 1), lamp2 = new THREE.PointLight(0xff9a3c, 0, 0, 1), lamp3 = new THREE.PointLight(0xff9a3c, 0, 0, 1); scene.add(lamp, lamp2, lamp3);
+const lamps = [lamp, lamp2, lamp3], lampBases = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];   // 光源の小物は3個まで。影を落とすのは1個目(lamp)だけ
+let lampBase = lampBases[0], lampPos = null, lampList = [];                          // lampList: 光源にした小物 {o, pos}（最大3、無ければ空）。lampPos は1個目の位置
 const props = [], propG = new THREE.Group(), actG = new THREE.Group();   // actG: キャラ(rig)と小物(propG)の親。遠近強調のとき、面ごとに変形して描く
 actG.matrixAutoUpdate = false; scene.add(actG); actG.add(propG);
 [sun, spot, lamp].forEach(l => { l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.normalBias = 0.005; });
@@ -253,6 +291,18 @@ const poolC = document.createElement('canvas'); poolC.width = poolC.height = 128
   r.addColorStop(0, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }
 const pool = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(poolC), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));   // 床と同じ高さ付近で重なるので手前に出す
 pool.rotation.x = -Math.PI / 2; pool.renderOrder = -1; scene.add(pool);
+const rim = new THREE.DirectionalLight(0xbcd4ff, 0); rim.visible = false; scene.add(rim, rim.target);   // 逆光：後ろ上から。影は落とさない
+const rimGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: pool.material.map, color: 0xbcd4ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));   // 背景の光だまり：キャラの後ろのやわらかい光の玉（常にこちら向き）
+rimGlow.visible = false; rimGlow.renderOrder = -1; scene.add(rimGlow);
+function rimApply() {
+  if (!S.F) return;
+  const u = S.u, bx = rig.position.x, bz = rig.position.z, by = bodyH, col = $('rmc').value, on = $('rmo').checked, gon = $('gfo').checked;
+  rim.visible = on;
+  if (on) { rim.color.set(col); rim.intensity = 1.5 * val('rmi'); rim.position.set(bx + val('rmx') * 0.8 * by, 1.4 * by, bz - 0.9 * by); rim.target.position.set(bx, 0.55 * by, bz); }
+  rimGlow.visible = gon;
+  if (gon) { rimGlow.material.color.set(col); rimGlow.material.opacity = val('gfi'); const gs = val('gfs'), wz = Math.min(...boxPoly().map(p => p.z)) + 0.02 * u; rimGlow.scale.set(0.6 * by * gs, 1.25 * by * gs, 1); rimGlow.position.set(bx, 0.55 * by, Math.max(wz, bz - 0.45 * by)); }   // 体の形に近い縦長。後ろ髪やスカートより奥（奥の壁の手前まで）に置く
+}
+['rmo', 'rmc', 'rmi', 'rmx', 'gfo', 'gfi', 'gfs'].forEach(id => $(id).oninput = $(id).onchange = rimApply);
 
 // ---- 床と背景のプリセット（模様はコードで生成。画像ファイルは使わない） ----
 const tx = {}, T = (k, f) => tx[k] ||= f();
@@ -510,19 +560,19 @@ function light() {
   const u = S.u, h = val('sh') * u, c = S.c.clone(), p = +$('lt').value;
   shadowFloor.position.set(c.x, 0.2 * u + 0.01 * u, c.z); shadowFloor.scale.set(S.r * 4, S.r * 4, 1);
   pool.position.set(c.x, 0.2 * u + 0.02 * u, c.z); pool.scale.set(8 * u, 8 * u, 1);
-  sun.visible = p <= 2 || p === 4 || p === 5; spot.visible = false; pool.visible = p === 2; lamp.visible = p === 3 || (p === 5 && (!!lampPos || +$('nl').value >= 2));   // 5: 空に連動（小物のランタンは夜に点く）
+  sun.visible = p <= 2 || p === 4 || p === 5; spot.visible = false; pool.visible = p === 2; const lampVis = p === 3 || (p === 5 && (!!lampPos || +$('nl').value >= 2)); lamps.forEach((L, i) => { L.visible = lampVis && (i === 0 || i < lampList.length); });   // 5: 空に連動（小物のランタンは夜に点く）
   const tgt = A(c, V(0, bodyH * 0.5, 0));
   if (p === 0) { hemi.color.set(0xfff2dd); hemi.groundColor.set(0x665544); hemi.intensity = 1.2; sun.color.set(0xffe2b0); sun.intensity = 2.6; sun.position.set(c.x - 0.4 * h, h, c.z + 0.5 * h); }
   if (p === 1) { hemi.color.set(0x8aa4ff); hemi.groundColor.set(0x1a2038); hemi.intensity = 0.6; sun.color.set(0xaec6ff); sun.intensity = 0.9; sun.position.set(c.x + 0.5 * h, h, c.z + 0.4 * h); }
   if (p === 2) { hemi.color.set(0x445066); hemi.groundColor.set(0x080808); hemi.intensity = 0.12; sun.color.set(0xffffff); sun.intensity = 3.2; sun.position.set(c.x, 1.2 * h, c.z + 0.4 * h); }
-  if (p === 3) { hemi.color.set(0xffc890); hemi.groundColor.set(0x221108); hemi.intensity = 0.25; lamp.intensity = 2; lamp.position.copy(lampPos || V(c.x, [0.08, 0.5, 0.95][+$('lh').value] * h, c.z)); }
+  if (p === 3) { hemi.color.set(0xffc890); hemi.groundColor.set(0x221108); hemi.intensity = 0.25; lamp.intensity = 2; }
   if (p === 4) { hemi.color.set(0xffffff); hemi.groundColor.set(0x999999); hemi.intensity = 1.4; sun.color.set(0xffffff); sun.intensity = 2; sun.position.set(c.x + 0.3 * h, 0.8 * h, c.z + 0.8 * h); }
-  if (p === 5) lamp.position.copy(lampPos || V(c.x, [0.08, 0.5, 0.95][+$('lh').value] * h, c.z));
-  sun.target.position.copy(tgt); spot.target.position.copy(tgt);
+  sun.target.position.copy(tgt); spot.target.position.copy(tgt); rimApply();
   Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h, near: 0.1 * u, far: 4 * h }); sun.shadow.camera.updateProjectionMatrix();
   spot.shadow.camera.near = 0.1 * u; spot.shadow.camera.far = 4 * h;
   lamp.shadow.camera.near = 0.05 * u; lamp.shadow.camera.far = 4 * h;
-  lampBase.copy(lamp.position);                          // ゆらぎの基準位置
+  const defPos = V(c.x, [0.08, 0.5, 0.95][+$('lh').value] * h, c.z);
+  lamps.forEach((L, i) => { const e = lampList[i]; L.position.copy(e ? e.pos : defPos); L.color.set(e ? e.o.lc : '#ff9a3c'); lampBases[i].copy(L.position); });   // 小物の光源ならその位置と色、無ければ足下/腰/頭上のランタン。ゆらぎの基準位置も保存
 }
 $('lt').onchange = light; $('lh').onchange = light; $('nl').onchange = light;
 
@@ -612,11 +662,225 @@ function build() {
   applyProps();
   applyFloor(); applyBg();
   light();
+  psBuild(); fyBuild();
 }
+
+// ---- 粒（蛍・雪・花びら・雨）。動きはすべてGPU側の計算（位置は時間と乱数の種から決まる）。常にカメラの方を向く板で、大きさはcm基準 ----
+// 箱の中＝箱の平面形の内側、窓の手前＝箱のまわりに厚みを持たせた輪（目と窓の間にも粒が来るので、頭を動かすと手前に浮いて見える）
+const PS = { mesh: null, mat: null, t: 0, col: new THREE.Color() };
+const PS_KIND = [null,
+  { mode: 0, size: 0.55, col: '#d9ff7a', add: true, fall: 0, sway: 0 },       // 蛍：ふわふわ漂って明滅
+  { mode: 1, size: 0.28, col: '#ffffff', fall: 2.8, sway: 0.9 },              // 雪：ゆっくり落ちて揺れる
+  { mode: 2, size: 0.6, col: '#ffb7c8', fall: 1.7, sway: 2.2 },               // 花びら：ひらひら回りながら
+  { mode: 3, size: 0.12, col: '#c8d8ee', fall: 45, sway: 0 }];                // 雨：細い線がサッと
+function boxPoly() {                                       // 箱の平面形（凸）。applyBg の部屋と同じ形
+  const F = S.F, P = S.N >= 4 ? F.map(f => f.pa) : S.N === 1 ? [A(F[0].pa, V(0, 0, -S.w)), F[0].pa, F[0].pb, A(F[0].pb, V(0, 0, -S.w))] : S.N === 3 ? [F[0].pa, F[0].pb, F[2].pa, F[2].pb] : [F[0].pa, F[0].pb, F[1].pb, A(F[0].pa, F[1].pb)];
+  return P.map(p => ({ x: p.x, z: p.z }));
+}
+const polyC = P => P.reduce((a, p) => ({ x: a.x + p.x / P.length, z: a.z + p.z / P.length }), { x: 0, z: 0 });
+const scalePoly = (P, k) => { const c = polyC(P); return P.map(p => ({ x: c.x + (p.x - c.x) * k, z: c.z + (p.z - c.z) * k })); };
+const inPoly = (P, x, z) => { let pos = false, neg = false; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], cr = (b.x - a.x) * (z - a.z) - (b.z - a.z) * (x - a.x); if (cr > 0) pos = true; else if (cr < 0) neg = true; } return !(pos && neg); };
+const apothem = P => { const c = polyC(P); let m = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b.x - a.x, b.z - a.z) || 1; m = Math.min(m, Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) / L); } return m; };
+function psPick(P, ex) {                                    // 多角形Pの内側（exの内側は除く）のランダムな点
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; P.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); });
+  for (let k = 0; k < 80; k++) { const x = x0 + Math.random() * (x1 - x0), z = z0 + Math.random() * (z1 - z0); if (inPoly(P, x, z) && !(ex && inPoly(ex, x, z))) return [x, z]; }
+  return [(x0 + x1) / 2, (z0 + z1) / 2];
+}
+function psClear() { if (PS.mesh) { scene.remove(PS.mesh); PS.mesh.geometry.dispose(); PS.mesh = null; } }
+function psMat() {
+  return PS.mat ||= new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: { uT: { value: 0 }, uMode: { value: 0 }, uSize: { value: 1 }, uFall: { value: 1 }, uWind: { value: 0 }, uSway: { value: 1 }, uWander: { value: 1 }, uAlpha: { value: 1 }, uCol: { value: new THREE.Color() } },
+    vertexShader: `
+      uniform float uT, uMode, uSize, uFall, uWind, uSway, uWander;
+      attribute vec3 aBase; attribute vec4 aRnd; attribute vec2 aVol;     // aBase=(x, z, 高さの割合)  aRnd=乱数4つ  aVol=(底の高さ, 高さ)
+      varying vec2 vUv; varying float vA;
+      void main() {
+        float t = uT, ph = aRnd.y * 6.2831853, a = 1.0, sz = uSize * (0.65 + 0.7 * aRnd.x);
+        vec3 p; vec2 q = position.xy;
+        if (uMode < 0.5) {                                              // 蛍：いくつかのゆっくりした揺れを重ねて漂う
+          float s1 = 0.35 + 0.5 * aRnd.z, s2 = 0.3 + 0.5 * aRnd.w, s3 = 0.4 + 0.4 * aRnd.x;
+          vec3 w = vec3(sin(t * s1 + ph) + 0.5 * sin(t * s1 * 2.3 + ph * 1.7), 0.6 * sin(t * s2 + ph * 2.0) + 0.3 * sin(t * s2 * 2.7 + ph), sin(t * s3 + ph * 0.5) + 0.5 * sin(t * s3 * 1.9 + ph * 3.1));
+          p = vec3(aBase.x, aVol.x + aVol.y * (0.12 + 0.76 * aBase.z), aBase.y) + w * uWander;
+          a = 0.12 + 0.88 * pow(0.5 + 0.5 * sin(t * (0.9 + 1.4 * aRnd.z) + ph * 3.0), 2.0);   // 明滅
+        } else if (uMode < 2.5) {                                       // 雪(1)・花びら(2)：落ちながら左右に揺れる。上で現れて下で消える
+          float H = aVol.y, v = uFall * (0.6 + 0.8 * aRnd.x), s = fract(aBase.z + t * v / H);
+          p = vec3(aBase.x + uSway * sin(t * (0.5 + 0.8 * aRnd.z) + ph) + uWind * H * 0.5 * s, aVol.x + H * (1.0 - s), aBase.y + uSway * 0.7 * cos(t * (0.4 + 0.7 * aRnd.w) + ph * 1.3));
+          a = smoothstep(0.0, 0.06, s) * smoothstep(0.0, 0.08, 1.0 - s);
+          if (uMode > 1.5) {                                            // 花びら：板を回しながら裏返す
+            float fl = 0.35 + 0.65 * abs(cos(t * (0.7 + 0.9 * aRnd.w) + ph)), r = t * (0.6 + 1.2 * aRnd.z) + ph, cr = cos(r), sr = sin(r);
+            q = vec2(q.x * fl, q.y * 1.5); q = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr);
+          }
+        } else {                                                        // 雨：速く落ちる
+          float H = aVol.y, v = uFall * (0.8 + 0.4 * aRnd.x), s = fract(aBase.z + t * v / H);
+          p = vec3(aBase.x + uWind * H * 0.5 * s, aVol.x + H * (1.0 - s), aBase.y);
+          a = smoothstep(0.0, 0.05, s) * smoothstep(0.0, 0.05, 1.0 - s);
+        }
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        if (uMode > 2.5) {                                              // 雨：画面上で落ちる向きに細長く伸ばす
+          vec2 d = (modelViewMatrix * vec4(uWind * 0.5, -1.0, 0.0, 0.0)).xy;
+          float L = length(d); d = L > 1e-4 ? d / L : vec2(0.0, -1.0);
+          mv.xy += d * q.y * sz * 22.0 + vec2(-d.y, d.x) * q.x * sz;
+        } else mv.xy += q * sz;
+        vUv = uv; vA = a; gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform float uMode, uAlpha; uniform vec3 uCol;
+      varying vec2 vUv; varying float vA;
+      void main() {
+        vec2 c = vUv - 0.5; float d = length(c) * 2.0, k;
+        if (uMode < 0.5) k = exp(-d * d * 5.0) * (1.0 - smoothstep(0.85, 1.0, d)) + 0.6 * exp(-d * d * 40.0);   // にじみ＋明るい芯
+        else if (uMode < 2.5) k = 1.0 - smoothstep(0.6, 1.0, d);
+        else k = (1.0 - abs(c.x) * 2.0) * (0.25 + 0.75 * vUv.y);
+        gl_FragColor = vec4(uCol, k * vA * uAlpha);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  });
+}
+function psApply() {                                       // 数以外の設定（種類・大きさ・風・色・速さの基準）を材質に反映
+  const K = PS_KIND[+$('ptk').value]; if (!PS.mesh || !K) return;
+  const U = psMat().uniforms, u = S.u;
+  U.uMode.value = K.mode; U.uSize.value = K.size * val('ptz') * u; U.uFall.value = K.fall * u; U.uSway.value = K.sway * u; U.uWander.value = 5 * u; U.uWind.value = val('ptd');
+  PS.col.set($('ptc').value); PS.mat.blending = K.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+}
+function psBuild() {                                       // 粒の位置の種を作り直す（種類・場所・数・箱の形が変わったとき）
+  psClear();
+  const K = PS_KIND[+$('ptk').value]; if (!K || !S.F) return;
+  const u = S.u, g0 = 0.2 * u, h = val('sh') * u, box = boxPoly(), where = +$('ptw').value, n = +$('ptn').value;
+  const inner = scalePoly(box, 0.92), outer = scalePoly(box, 1 + val('ptf') * u / Math.max(apothem(box), 1e-3));
+  const jobs = [];
+  if (where !== 1) jobs.push({ P: inner, ex: null, n, H: h - g0 });                                          // 箱の中
+  if (where !== 0) jobs.push({ P: outer, ex: box, n: where === 1 ? n : Math.round(n * 0.5), H: (h - g0) * 1.25 });   // 窓の手前（箱のまわりの輪）
+  const tot = jobs.reduce((a, j) => a + j.n, 0); if (!tot) return;
+  const aBase = new Float32Array(tot * 3), aRnd = new Float32Array(tot * 4), aVol = new Float32Array(tot * 2); let k = 0;
+  jobs.forEach(j => { for (let i = 0; i < j.n; i++, k++) { const [x, z] = psPick(j.P, j.ex); aBase.set([x, z, Math.random()], k * 3); aRnd.set([Math.random(), Math.random(), Math.random(), Math.random()], k * 4); aVol.set([g0, j.H], k * 2); } });
+  const base = new THREE.PlaneGeometry(1, 1), g = new THREE.InstancedBufferGeometry();
+  g.index = base.index; g.setAttribute('position', base.getAttribute('position')); g.setAttribute('uv', base.getAttribute('uv')); g.instanceCount = tot;
+  g.setAttribute('aBase', new THREE.InstancedBufferAttribute(aBase, 3)); g.setAttribute('aRnd', new THREE.InstancedBufferAttribute(aRnd, 4)); g.setAttribute('aVol', new THREE.InstancedBufferAttribute(aVol, 2));
+  PS.mesh = new THREE.Mesh(g, psMat()); PS.mesh.frustumCulled = false; PS.mesh.renderOrder = 5; scene.add(PS.mesh);
+  psApply();
+}
+function psTick(dt) {
+  if (!PS.mesh) return;
+  const K = PS_KIND[+$('ptk').value], U = PS.mat.uniforms; PS.t += dt * val('pts'); U.uT.value = PS.t;
+  const br = THREE.MathUtils.clamp(0.25 + 0.5 * hemi.intensity + (sun.visible ? 0.2 * sun.intensity : 0), 0.25, 1);   // 部屋の明るさ。暗いときは雪や雨も暗くする
+  if (K.mode === 0) { U.uAlpha.value = $('ptb').checked ? 1 - THREE.MathUtils.smoothstep(br, 0.35, 0.8) : 1; U.uCol.value.copy(PS.col); }
+  else { U.uAlpha.value = 0.9; U.uCol.value.copy(PS.col).multiplyScalar(br); }
+}
+$('ptk').onchange = () => { const K = PS_KIND[+$('ptk').value]; if (K) $('ptc').value = K.col; psBuild(); };
+['ptw', 'ptn', 'ptf'].forEach(id => $(id).oninput = $(id).onchange = psBuild);
+['ptz', 'ptd', 'ptc'].forEach(id => $(id).oninput = psApply);
+
+// ---- 妖精（光る小物）。ふわふわ飛ぶ光2〜3個。ハロ・芯・粉は1回のインスタンス描画、羽は薄い板、必要なら点光源でキャラや床も照らす。propG の中なので遠近強調の対象 ----
+const FY = { t: 0, n: 0, max: 3, M: 12, mesh: null, mat: null, fs: [], P: null, c: { x: 0, z: 0 }, rx: 1, rz: 1 };
+const FY_W = [0.52, 0.67, 0.43];                          // 妖精ごとの漂う速さの基準（rad/s）
+const fyWingTex = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 96; const g = c.getContext('2d');
+  g.translate(0, 48); const gr = g.createLinearGradient(0, 0, 64, 0); gr.addColorStop(0, 'rgba(255,255,255,.95)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(14, -62, 62, -54, 60, -8); g.bezierCurveTo(58, 26, 26, 36, 0, 0); g.fill();   // 付け根から右へ広がるしずく形
+  return new THREE.CanvasTexture(c); })();
+const fyWingGeo = new THREE.PlaneGeometry(1, 1).translate(0.5, 0, 0);   // 付け根が原点（x=0〜1）
+function fyMat() {
+  return FY.mat ||= new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `
+      attribute vec3 aP; attribute float aS; attribute vec4 aC; attribute float aK;
+      varying vec2 vUv; varying vec4 vC; varying float vK;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(aP, 1.0);
+        mv.xy += position.xy * aS;
+        vUv = uv; vC = aC; vK = aK; gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec2 vUv; varying vec4 vC; varying float vK;
+      void main() {
+        vec2 c = vUv - 0.5; float d = length(c) * 2.0;
+        float k = (vK < 0.5 ? exp(-d * d * 4.0) : exp(-d * d * 14.0)) * (1.0 - smoothstep(0.8, 1.0, d));   // 0:やわらかいハロ 1:明るい芯
+        gl_FragColor = vec4(vC.rgb, k * vC.a);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  });
+}
+function fyInit() {
+  const N = FY.max * (2 + FY.M), base = new THREE.PlaneGeometry(1, 1), g = new THREE.InstancedBufferGeometry();
+  g.index = base.index; g.setAttribute('position', base.getAttribute('position')); g.setAttribute('uv', base.getAttribute('uv'));
+  const at = (n, k) => new THREE.InstancedBufferAttribute(new Float32Array(N * k), k).setUsage(THREE.DynamicDrawUsage);
+  FY.aP = at(N, 3); FY.aS = at(N, 1); FY.aC = at(N, 4); FY.aK = at(N, 1);
+  g.setAttribute('aP', FY.aP); g.setAttribute('aS', FY.aS); g.setAttribute('aC', FY.aC); g.setAttribute('aK', FY.aK); g.instanceCount = 0;
+  FY.mesh = new THREE.Mesh(g, fyMat()); FY.mesh.frustumCulled = false; FY.mesh.renderOrder = 6; propG.add(FY.mesh);
+  for (let i = 0; i < FY.max; i++) {
+    const f = { pos: V(0, 0, 0), col: new THREE.Color(), wg: new THREE.Group(), light: new THREE.PointLight(0xffffff, 0, 0, 1), em: 0, ei: 0, tt: 0,
+      dust: Array.from({ length: FY.M }, () => ({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, age: 1, life: 1 })) };
+    f.mat = new THREE.MeshBasicMaterial({ map: fyWingTex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    f.wR = new THREE.Mesh(fyWingGeo, f.mat); f.wL = new THREE.Mesh(fyWingGeo, f.mat);
+    f.wR.rotation.z = 0.5; f.wL.rotation.z = -0.5;   // 付け根から左右に少し上向き（左は幅をマイナスにして鏡像）
+    f.wR.renderOrder = f.wL.renderOrder = 6;
+    f.wg.add(f.wR, f.wL); f.wg.visible = false; f.light.visible = false;
+    propG.add(f.wg, f.light); FY.fs.push(f);
+  }
+}
+function fyColor() {                                        // 妖精ごとの色（「色をずらす」なら色相を少しずつずらす）
+  const b = new THREE.Color($('fyc').value), hsl = {}; b.getHSL(hsl);
+  FY.fs.forEach((f, i) => { if ($('fyd').checked && i) f.col.setHSL((hsl.h + i * 0.09) % 1, hsl.s, hsl.l); else f.col.copy(b); });
+}
+function fyBuild() {                                        // 飛ぶ範囲＝箱の内側＋各窓の手前（面ごとに外向きにはみ出す分）。奥の壁側には広げない
+  if (!S.F) return; if (!FY.mesh) fyInit();
+  FY.n = +$('fyn').value;
+  const box = boxPoly(), u = S.u, ap = Math.max(apothem(box), 1e-3), ext = val('fyx') * u, m = 0.08 * ap;
+  FY.in = scalePoly(box, 0.92); FY.c = polyC(FY.in);
+  FY.pr = ext > 0 ? S.F.map(f => { const dx = f.pb.x - f.pa.x, dz = f.pb.z - f.pa.z, L = Math.hypot(dx, dz) || 1, nx = -dz / L, nz = dx / L;
+    return [{ x: f.pa.x - nx * m, z: f.pa.z - nz * m }, { x: f.pb.x - nx * m, z: f.pb.z - nz * m }, { x: f.pb.x + nx * ext, z: f.pb.z + nz * ext }, { x: f.pa.x + nx * ext, z: f.pa.z + nz * ext }]; }) : [];
+  FY.P = FY.in;
+  const all = FY.in.concat(...FY.pr);
+  FY.rx = Math.max(...all.map(p => Math.abs(p.x - FY.c.x))); FY.rz = Math.max(...all.map(p => Math.abs(p.z - FY.c.z)));
+  fyColor();
+}
+const fyIn = (x, z) => inPoly(FY.in, x, z) || FY.pr.some(P => inPoly(P, x, z));
+function fyTick(dt, eye) {
+  if (!FY.mesh) return;
+  const nF = FY.n, geo = FY.mesh.geometry;
+  FY.fs.forEach((f, i) => { if (i >= nF || !FY.P) { f.wg.visible = false; f.light.visible = false; } });
+  if (!nF || !FY.P) { geo.instanceCount = 0; return; }
+  const dts = dt * val('fyv'); FY.t += dts; const t = FY.t, u = S.u, sz = val('fys'), g0 = 0.2 * u, h = val('sh') * u, li = val('fyl');
+  const br = THREE.MathUtils.clamp(0.25 + 0.5 * hemi.intensity + (sun.visible ? 0.2 * sun.intensity : 0), 0.25, 1);   // 部屋の明るさ（粒の蛍と同じ基準）
+  const night = $('fyb').checked ? 1 - THREE.MathUtils.smoothstep(br, 0.35, 0.8) : 1;
+  const wing = $('fyw').checked, trail = $('fyt').checked, lit = $('fyi').checked, blink = $('fyk').checked, per = val('fyg'), lim = +$('fym').value;
+  const y0 = g0 + 0.12 * (h - g0), y1 = g0 + 0.9 * (h - g0), aP = FY.aP.array, aS = FY.aS.array, aC = FY.aC.array, aK = FY.aK.array; let k = 0;
+  const put = (x, y, z, s, r, g, b, a, kind) => { aP[k * 3] = x; aP[k * 3 + 1] = y; aP[k * 3 + 2] = z; aS[k] = s; aC.set([r, g, b, a], k * 4); aK[k] = kind; k++; };
+  for (let i = 0; i < nF; i++) {
+    const f = FY.fs[i], w = FY_W[i], ph = i * 2.1 + 0.7, q = (a, b) => 0.62 * Math.sin(w * a * f.tt + b) + 0.38 * Math.sin(2.31 * w * a * f.tt + b * 1.7);
+    const gq = 0.5 + 0.5 * Math.sin(t * 0.35 + i * 2.4), sp = 1 + val('fyq') * (0.15 + 2.8 * gq * gq * gq - 1);   // 緩急：ゆっくり漂う時間が長く、ときどきスッと速く動く（平均の速さはほぼ同じ）
+    f.tt += dts * sp;
+    const dx = FY.rx * q(1, ph), dz = FY.rz * q(0.83, ph * 1.9 + 1), qy = q(0.71, ph * 2.6 + 2);
+    let s = 1;
+    if (!fyIn(FY.c.x + dx, FY.c.z + dz)) { let lo = 0, hi = 1; for (let j = 0; j < 7; j++) { const m = (lo + hi) / 2; if (fyIn(FY.c.x + dx * m, FY.c.z + dz * m)) lo = m; else hi = m; } s = lo; }   // 範囲の外に出る分は中心へ寄せる
+    f.pos.set(FY.c.x + dx * s + 0.35 * u * Math.sin(t * 3.1 + ph * 3), y0 + (y1 - y0) * (0.5 + 0.5 * qy) + 0.45 * u * Math.sin(t * 2.3 + ph), FY.c.z + dz * s + 0.35 * u * Math.sin(t * 2.7 + ph * 2));   // 大きな漂い＋細かいふわふわ
+    let bl = 1; if (blink) { const x = (((t / per + i * 0.37 + 0.1) % 1) + 1) % 1; bl = THREE.MathUtils.smoothstep(x, 0, 0.12) * (1 - THREE.MathUtils.smoothstep(x, 0.52, 0.64)); }   // 点滅：妖精ごとに位相をずらす。消えている間は描かない
+    const A = night * bl * (0.8 + 0.2 * Math.sin(t * 2.6 + ph * 3) * Math.sin(t * 0.7 + ph)), on = A > 0.01, c = f.col, p = f.pos;
+    if (on) put(p.x, p.y, p.z, 3.4 * u * sz, c.r, c.g, c.b, 0.5 * A, 0);                                                       // ハロ
+    if (on) put(p.x, p.y, p.z, 1.0 * u * sz, c.r + (1 - c.r) * 0.6, c.g + (1 - c.g) * 0.6, c.b + (1 - c.b) * 0.6, 0.95 * A, 1);   // 明るい芯
+    if (trail && on) {                                                                                                       // きらめく粉：一定間隔で落とし、ゆっくり消える
+      f.em += dts; if (f.em > 0.09) { f.em = 0; const d = f.dust[f.ei++ % FY.M]; d.x = p.x + (Math.random() - 0.5) * 0.4 * u; d.y = p.y + (Math.random() - 0.5) * 0.4 * u; d.z = p.z + (Math.random() - 0.5) * 0.4 * u; d.vx = (Math.random() - 0.5) * 0.8 * u; d.vy = (-0.3 - Math.random() * 0.6) * u; d.vz = (Math.random() - 0.5) * 0.8 * u; d.age = 0; d.life = 1.1 + Math.random() * 0.6; }
+    }
+    f.dust.forEach(d => {
+      if (d.age < d.life) { d.age += dts; d.x += d.vx * dts; d.y += d.vy * dts; d.z += d.vz * dts; }
+      const r = d.age < d.life ? 1 - d.age / d.life : 0;
+      if (r > 0) put(d.x, d.y, d.z, 0.35 * u * sz * (0.5 + 0.5 * r), c.r, c.g, c.b, 0.8 * Math.pow(r, 1.5) * night, 1);
+    });
+    f.wg.visible = wing && on; if (wing && on) { f.wg.position.copy(p); f.wg.lookAt(eye);                                                      // 羽は常にこちら向き。付け根を軸に幅を伸縮して羽ばたく
+    const fa = 0.2 + 0.8 * Math.abs(Math.cos(t * 13 + ph));
+    f.wR.scale.set(1.7 * u * sz * fa, 2.4 * u * sz, 1); f.wL.scale.set(-1.7 * u * sz * fa, 2.4 * u * sz, 1); f.mat.color.copy(c); f.mat.opacity = 0.55 * A; }
+    f.light.visible = lit && i < lim; if (lit && i < lim) { f.light.position.copy(p); f.light.color.copy(c); f.light.intensity = 0.35 * li * A; }
+  }
+  geo.instanceCount = k; FY.aP.needsUpdate = FY.aS.needsUpdate = FY.aC.needsUpdate = FY.aK.needsUpdate = true;
+}
+['fyn', 'fyx'].forEach(id => $(id).oninput = $(id).onchange = fyBuild);
+['fyc', 'fyd'].forEach(id => $(id).oninput = $(id).onchange = fyColor);
 
 function standPos() {                                    // 立ち位置の調整（左右・前後。小物と同じ向き・単位）
   rig.position.set(S.c.x + val('stx') * S.u, (0.2 + ($('stc').checked ? val('sty') : 0)) * S.u, S.c.z + val('stz') * S.u);   // 高さ: モーション中の足のめり込み補正用（cm）
-  rig.updateMatrixWorld(true);
+  rig.updateMatrixWorld(true); rimApply();
 }
 function place() {
   if (!vrm && !mmd) return;
@@ -1656,7 +1920,7 @@ $('ms').onchange = () => {
 
 // ---- 小物（glb）。位置は箱の中央を原点とした cm。足元の円と壁の外には置けない（すり抜けで解除） ----
 function sel() { return props[+$('oo').value]; }
-function syncUI(o) { if (!o) return; ['x', 'z', 'y', 's', 'r'].forEach(k => $('o' + k).value = o[k]); $('ol').checked = o.light; $('ot').checked = o.thru; $('ow').checked = !!o.sway; }
+function syncUI(o) { if (!o) return; ['x', 'z', 'y', 's', 'r'].forEach(k => $('o' + k).value = o[k]); $('ol').checked = o.light; $('olc').value = o.lc; $('oli').value = o.li; $('ot').checked = o.thru; $('ow').checked = !!o.sway; }
 function rebuildSel(i) {
   const e = $('oo'); e.innerHTML = props.length ? '' : '<option value="-1">（小物なし）</option>';
   props.forEach((o, j) => e.add(new Option(o.name, j)));
@@ -1672,15 +1936,17 @@ function fit(o) {
   }
 }
 function applyProps() {
-  const u = S.u, g0 = 0.2 * u; lampPos = null;
+  const u = S.u, g0 = 0.2 * u; lampList = [];
   props.forEach(o => {
     fit(o);
     o.piv.position.set(S.c.x + o.x * u, g0 + o.y * u, S.c.z + o.z * u);
     o.piv.scale.setScalar(o.k * o.s * u); o.piv.rotation.y = o.r * Math.PI / 180;
-    o.piv.traverse(m => { if (m.isMesh) m.castShadow = !o.light; });                  // 光源の小物は自分の光を遮らない
-    if (o.light) lampPos = V(o.piv.position.x, g0 + (o.y + o.hcm * o.s * 0.5) * u, o.piv.position.z);
+    const lit = o.light && lampList.length < 3;                                        // 光源は3個まで
+    o.piv.traverse(m => { if (m.isMesh) m.castShadow = !lit; });                       // 光源の小物は自分の光を遮らない
+    if (lit) lampList.push({ o, pos: V(o.piv.position.x, g0 + (o.y + o.hcm * o.s * 0.5) * u, o.piv.position.z) });
   });
-  if (lampPos) lampBase.copy(lampPos);                   // 光源の小物を動かしたら光も追う
+  lampPos = lampList[0]?.pos || null;
+  lampList.forEach((e, i) => lampBases[i].copy(e.pos));  // 光源の小物を動かしたら光も追う
 }
 async function addProp(file, q = {}, fresh = false) {
   try {
@@ -1691,7 +1957,7 @@ async function addProp(file, q = {}, fresh = false) {
     const piv = new THREE.Group(); piv.add(obj); propG.add(piv);
     const hcm = q.hcm ?? 0.25 * val('ch');                                                          // 追加時は身長の4分の1
     const o = { name: file.name.replace(/\.(glb|gltf)$/i, ''), file: copy, piv, hcm, k: hcm / (sz.y || 1),
-      x: q.x ?? 4, z: q.z ?? 0, y: q.y ?? 0, s: q.s ?? 1, r: q.r ?? 0, light: !!q.light, thru: !!q.thru, sway: !!q.sway };
+      x: q.x ?? 4, z: q.z ?? 0, y: q.y ?? 0, s: q.s ?? 1, r: q.r ?? 0, light: !!q.light, lc: q.lc ?? '#ff9a3c', li: q.li ?? 1, thru: !!q.thru, sway: !!q.sway };
     props.push(o); rebuildSel(props.length - 1); applyProps();
     if (fresh) { const i = props.length - 1; put('pf:' + i, copy).then(() => put('pn', props.length)); }
     return true;
@@ -1708,10 +1974,14 @@ $('oo').onchange = () => syncUI(sel());
 ['ox', 'oz', 'oy', 'os', 'or'].forEach(id => $(id).oninput = () => { const o = sel(); if (!o) return; o[id[1]] = +$(id).value; applyProps(); syncUI(o); });
 $('ol').onchange = () => {
   const o = sel(); if (!o) return;
-  props.forEach(p => p.light = false); o.light = $('ol').checked;
-  if (o.light) $('lt').value = '3';                                                                 // 光源ONでランタン光に切り替え
+  const others = props.filter(p => p !== o && p.light).length;
+  if ($('ol').checked && others >= 3) { $('ol').checked = false; st('光源にできる小物は3個までです。'); return; }
+  o.light = $('ol').checked;
+  if (o.light && others === 0) $('lt').value = '3';                                                 // 最初の光源ONでランタン光に切り替え（2個目以降は今の設定のまま）
   applyProps(); light();
 };
+$('olc').oninput = () => { const o = sel(); if (!o) return; o.lc = $('olc').value; light(); };
+$('oli').oninput = () => { const o = sel(); if (!o) return; o.li = +$('oli').value; };
 $('ot').onchange = () => { const o = sel(); if (!o) return; o.thru = $('ot').checked; applyProps(); };
 $('ow').onchange = () => { const o = sel(); if (!o) return; o.sway = $('ow').checked; };
 $('od').onclick = () => {
@@ -2209,7 +2479,8 @@ function saveParams() {
   $('ui').querySelectorAll('input[type=range],input[type=checkbox],select').forEach(e => {
     if (e.id && e.id !== 'ms' && e.id !== 'ml' && !e.closest('#pr')) p[e.id] = e.type === 'checkbox' ? e.checked : e.value;
   });
-  try { localStorage.setItem(KEY, JSON.stringify({ p, lay, pv, dragMode, fm: flick, ms: val('ms'), open: Object.fromEntries([...document.querySelectorAll('#ui details')].map(d => [d.id, d.open])), props: props.map(o => ({ x: o.x, z: o.z, y: o.y, s: o.s, r: o.r, light: o.light, thru: o.thru, sway: o.sway, hcm: o.hcm })) })); } catch {}
+  p.ptc = $('ptc').value; p.fyc = $('fyc').value; p.rmc = $('rmc').value;
+  try { localStorage.setItem(KEY, JSON.stringify({ p, lay, pv, dragMode, fm: flick, ms: val('ms'), open: Object.fromEntries([...document.querySelectorAll('#ui details')].map(d => [d.id, d.open])), props: props.map(o => ({ x: o.x, z: o.z, y: o.y, s: o.s, r: o.r, light: o.light, lc: o.lc, li: o.li, thru: o.thru, sway: o.sway, hcm: o.hcm })) })); } catch {}
 }
 ['input', 'change', 'click'].forEach(t => addEventListener(t, () => { clearTimeout(tm); tm = setTimeout(saveParams, 400); }, true));
 $('clr').onclick = async () => {
@@ -2291,6 +2562,7 @@ restore();
   updateBeams(peW);
   const pl = playing ? '停止' : '再生'; if (pl !== playLbl) $('play').textContent = playLbl = pl;
   const dt = Math.min(clock.getDelta(), 0.1);
+  psTick(dt); fyTick(dt, peW);
   wander(dt); look.position.copy(peW).add(wCur);
   if (vrm) {
     if (playing) {
@@ -2354,13 +2626,14 @@ restore();
     sun.color.copy(P.sc); sun.intensity = P.si * (1 + (M.sm - 1) * w); sun.position.set(S.c.x + P.sx * h, P.sy * h, S.c.z + P.sz * h);
   }
   const tt = performance.now(), fk = val('fk'), lampOn = lp === 3 || (lp === 5 && (lampPos || NMODE[nightMode].lamp)), nt = lp === 3 ? 1 : skyP.nt;
-  if (lampOn) {                                          // ランタン光のゆらぎ（明るさと位置）
-    const fl = 1 + fk * (0.08 * Math.sin(tt * 0.009) + 0.06 * Math.sin(tt * 0.0237) + 0.05 * Math.sin(tt * 0.0517 + 1.3) * Math.sin(tt * 0.0131));
-    lamp.intensity = 2 * fl * nt;
-    const j = 0.15 * S.u * fk;
-    lamp.position.set(lampBase.x + j * Math.sin(tt * 0.0113), lampBase.y + 1.3 * j * Math.sin(tt * 0.0171 + 1), lampBase.z + j * Math.sin(tt * 0.0097 + 2));
-    props.forEach(o => { if (o.light) o.piv.traverse(m => { const mt = m.material; if (mt?.emissive) { mt.userData.ei ??= mt.emissiveIntensity; mt.emissiveIntensity = mt.userData.ei * fl * (0.25 + 0.75 * nt); } }); });   // 発光部分も光に合わせる
-  } else lamp.intensity = 0;
+  lamps.forEach((L, i) => {                              // ランタン光のゆらぎ（明るさと位置）。光ごとにゆらぎの時間をずらす
+    const e = lampList[i];
+    if (!lampOn || (i > 0 && !e)) { L.intensity = 0; return; }
+    const t2 = tt + i * 1900, fl = 1 + fk * (0.08 * Math.sin(t2 * 0.009) + 0.06 * Math.sin(t2 * 0.0237) + 0.05 * Math.sin(t2 * 0.0517 + 1.3) * Math.sin(t2 * 0.0131)), j = 0.15 * S.u * fk, bs = lampBases[i];
+    L.intensity = 2 * (e ? e.o.li : 1) * fl * nt;
+    L.position.set(bs.x + j * Math.sin(t2 * 0.0113), bs.y + 1.3 * j * Math.sin(t2 * 0.0171 + 1), bs.z + j * Math.sin(t2 * 0.0097 + 2));
+    if (e) e.o.piv.traverse(m => { const mt = m.material; if (mt?.emissive) { mt.userData.ei ??= mt.emissiveIntensity; mt.emissiveIntensity = mt.userData.ei * fl * (0.25 + 0.75 * nt); } });   // 発光部分も光に合わせる
+  });
   const sk = val('sk');
   props.forEach((o, i) => {                              // 小物の揺れ（付け根を支点にゆっくり）
     if (o.sway && sk > 0) { o.piv.rotation.x = 0.035 * sk * Math.sin(tt * 0.0011 + i * 2); o.piv.rotation.z = 0.045 * sk * Math.sin(tt * 0.0014 + i); }
