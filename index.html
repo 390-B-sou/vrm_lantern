@@ -18,6 +18,14 @@
   details{flex-basis:100%;border-top:1px solid #3a404b}
   summary{cursor:pointer;font-size:12px;opacity:.9;padding:6px 0;user-select:none}
   .g{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:2px 0 8px}
+  details.sub{flex-basis:calc(100% - 10px);margin-left:10px;border-top:1px dashed #3a404b}
+  details.sub>summary{font-size:12px;opacity:.8;padding:4px 0}
+  details:not(.sub)>summary{font-size:13px;font-weight:600;opacity:1}
+  #fp{display:none;position:fixed;inset:0;z-index:80;background:#000;flex-direction:column}
+  #fp.on{display:flex} #fpc{flex:1;min-height:0;width:100%;touch-action:none}
+  #fpb{padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#14161b;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:12px} #fpm{flex-basis:100%}
+  .rv{min-width:2.8em;font-size:11px;opacity:.8;font-variant-numeric:tabular-nums}
+  .lb{flex-basis:100%;font-size:11px;opacity:.6;border-bottom:1px solid #3a404b;padding-top:2px}
 </style>
 </head>
 <body>
@@ -26,51 +34,66 @@
 <div id="ui">
   <div id="top">
     <button id="cam">カメラ開始</button>
-    <button id="play">再生</button><button id="fm">フリック: モデル</button>
-    <span id="st">モデルを選んでください。カメラなしではドラッグで視点が動きます。</span>
-  </div>
-  <details id="d1" open><summary>モデル・モーション</summary><div class="g">
-    <label class="b">モデルを追加(.vrm/.zip/.pmx)<input type="file" id="mf" multiple></label>
-    <select id="ml"><option value="">（モデルなし）</option></select>
-    <button id="mld">モデル削除</button>
-    <label class="b">MMD重力<input type="range" id="mg" min="0.5" max="4" step="0.25" value="1"></label>
-    <label class="b">接地補正(VRMA)<input type="range" id="mgr" min="0" max="2" step="0.1" value="1"></label>
-    <label class="b">足の交差防止(VMD)<input type="range" id="mxg" min="0" max="1" step="0.05" value="0.4"></label>
-    <label class="b">ひざの交差防止(IK後)<input type="range" id="mkc" min="0" max="1.5" step="0.05" value="0.7"></label>
-    <label class="b">MMD物理の細かさ<input type="range" id="mpq" min="1" max="3" step="0.5" value="1.5"></label>
-    <label class="b">足の当たり判定の太さ<input type="range" id="mlc" min="1" max="1.6" step="0.05" value="1.15"></label>
-    <label class="b">速度上限 <span id="pvt">300</span><input type="range" id="pvs" min="50" max="600" step="10" value="300"></label>
-    <label class="b">MMDの明るさ<input type="range" id="mb" min="0" max="1" step="0.05" value="0.85"></label>
-    <label class="s"><input type="checkbox" id="mr" style="width:auto" checked>MMDの待機ポーズをリラックス</label>
-    <label class="b">MMDの腕の角度(度)<input type="range" id="ma" min="0" max="60" step="1" value="20"></label>
-    <label class="b">MMDの手の握り<input type="range" id="mh" min="0" max="2.5" step="0.05" value="1.25"></label>
-    <label class="s"><input type="checkbox" id="mhf" style="width:auto">握りの向き反転</label>
-    <span class="s">立ち位置 左右<input type="range" id="stx" min="-15" max="15" step="0.1" value="0"></span>
-    <span class="s">立ち位置 前後<input type="range" id="stz" min="-15" max="100" step="0.1" value="0"></span>
-    <label class="s"><input type="checkbox" id="stc" style="width:auto" checked>高さ調整を使う</label>
-    <span class="s">立ち位置 高さ<input type="range" id="sty" min="-5" max="5" step="0.1" value="0"></span>
-    <button id="stR">立ち位置を戻す</button>
-    <label class="b">モーション(.vrma/.vmd)<input type="file" id="fw" multiple></label>
-    <select id="ms"><option value="-1">（未読込）</option></select>
-    <button id="mdel">削除</button>
-    <label class="s"><input type="checkbox" id="lp" style="width:auto">ループ</label>
-    <label class="s"><input type="checkbox" id="sq" style="width:auto">順番に再生</label>
-    <label class="s"><input type="checkbox" id="mp" style="width:auto" checked>MMD物理</label>
-    <label class="s"><input type="checkbox" id="ph0" style="width:auto">開始・終了0.5秒は物理オフ</label>
-    <label class="s"><input type="checkbox" id="ph1" style="width:auto" checked>開始は基本姿勢から移行</label>
-    <label class="s"><input type="checkbox" id="pv" style="width:auto" checked>物理の速度上限</label>
-    <label class="b">既定の音<input type="file" id="fa"></label>
-    <label class="b">このモーションの音<input type="file" id="fmu"></label>
-    <button id="fmx">音を外す</button>
-    <span class="s">音量<input type="range" id="vo" min="0" max="1" step="0.05" value="0.8"></span>
-  </div></details>
-  <details id="d2"><summary>面・表示</summary><div class="g">
-    <select id="nf"><option value="1">面数: 1</option><option value="2" selected>面数: 2</option><option value="3">面数: 3</option><option value="4">面数: 4</option><option value="5">面数: 5</option><option value="6">面数: 6</option><option value="7">面数: 7</option><option value="8">面数: 8</option></select>
+    <button id="cbg" data-cam>背景を撮る</button><button id="play">再生</button><button id="fm">フリック: モデル</button>
     <button id="lay">並び: 左右</button>
     <button id="pvb">表示: 平面</button>
     <button id="fs1">全画面</button>
     <button id="pmb">平面: 見える面</button>
     <button id="cpb">携帯2台</button>
+    <button id="dm">ドラッグ: 向き</button>
+    <button id="fr">正面</button>
+    <button id="hr">手を変える</button>
+    <span id="st">モデルを選んでください。カメラなしではドラッグで視点が動きます。</span>
+  </div>
+  <details id="g_file" open><summary>ファイル関係</summary>
+  <details class="sub" id="f_model"><summary>モデル</summary><div class="g">
+    <label class="b">モデルを追加(.vrm/.zip/.pmx)<input type="file" id="mf" multiple></label>
+    <select id="ml"><option value="">（モデルなし）</option></select>
+    <button id="mld">モデル削除</button>
+  </div></details>
+  <details class="sub" id="f_motion"><summary>モーション</summary><div class="g">
+    <label class="b">モーション(.vrma/.vmd)<input type="file" id="fw" multiple></label>
+    <select id="ms"><option value="-1">（未読込）</option></select>
+    <button id="mdel">削除</button>
+    <label class="s"><input type="checkbox" id="lp" style="width:auto">ループ</label>
+    <label class="s"><input type="checkbox" id="sq" style="width:auto">順番に再生</label>
+  </div></details>
+  <details class="sub" id="f_sound"><summary>BGM・効果音</summary><div class="g">
+    <label class="b">既定の音<input type="file" id="fa"></label>
+    <label class="b">このモーションの音<input type="file" id="fmu"></label>
+    <button id="fmx">音を外す</button>
+    <span class="s">音量<input type="range" id="vo" min="0" max="1" step="0.05" value="0.8"></span>
+  </div></details>
+  <details class="sub" id="f_prop"><summary>小物（読み込み）</summary><div class="g">
+    <label class="b">小物を追加(.glb)<input type="file" id="of"></label>
+    <select id="oo"><option value="-1">（小物なし）</option></select>
+    <button id="od">小物を外す</button>
+  </div></details>
+  <details class="sub" id="f_floor"><summary>床の写真</summary><div class="g">
+    <label class="b">床の写真を選ぶ<input type="file" id="flf" accept="image/*"></label>
+    <button id="flre">四隅を取り直す</button>
+    <button id="fld">床の写真を外す</button>
+  </div></details>
+  <details class="sub" id="f_save"><summary>保存・消去</summary><div class="g">
+    <button id="cm">モデルを全部消す</button>
+    <button id="clr">保存を消す</button>
+  </div></details>
+  </details>
+  <details id="g_live"><summary>配信関係</summary>
+  <details class="sub" id="l_face"><summary>面の数・大きさ</summary><div class="g">
+    <select id="nf"><option value="1">面数: 1</option><option value="2" selected>面数: 2</option><option value="3">面数: 3</option><option value="4">面数: 4</option><option value="5">面数: 5</option><option value="6">面数: 6</option><option value="7">面数: 7</option><option value="8">面数: 8</option></select>
+    <span class="s">面の幅<input type="range" id="sw" min="4" max="12" step="0.1" value="7"></span>
+    <span class="s">面の高さ<input type="range" id="sh" min="5" max="16" step="0.1" value="13"></span>
+    <span class="s">身長<input type="range" id="ch" min="5" max="20" step="0.5" value="11"></span>
+    <span class="s">角の開き(2面)<input type="range" id="an" min="60" max="150" step="1" value="90"><b id="anv" style="display:inline-block;min-width:3.4em;margin-left:6px">90°</b></span>
+  </div></details>
+  <details class="sub" id="l_box"><summary>箱・端末</summary><div class="g">
+    <span class="s">端末幅<input type="range" id="pw" min="4" max="10" step="0.1" value="7"></span>
+    <span class="s">箱の倍率<input type="range" id="pk" min="0.3" max="1.2" step="0.05" value="0.6"></span>
+    <span class="s">窓の上下の枠(mm)<input type="range" id="frm" min="0" max="15" step="0.5" value="5"></span>
+    <span class="s">箱の上下<input type="range" id="py" min="-8" max="8" step="0.1" value="0"></span>
+  </div></details>
+  <details class="sub" id="l_q"><summary>画質・ぼかし</summary><div class="g">
     <label class="s"><input type="checkbox" id="gr" style="width:auto" checked>メッシュ</label>
     <select id="qa"><option value="0">解像度: 自動</option><option>256</option><option>384</option><option>512</option><option>768</option><option>1024</option></select>
     <label class="s"><input type="checkbox" id="aa" style="width:auto" checked>AA</label>
@@ -79,51 +102,87 @@
     <span class="s">ピント範囲<input type="range" id="dr" min="0" max="20" step="0.5" value="4"></span>
     <select id="dq"><option value="10">ぼかし品質: 低</option><option value="16" selected>ぼかし品質: 中</option><option value="28">ぼかし品質: 高</option></select>
     <select id="ds"><option value="1">ぼかし解像度: 等倍</option><option value="0.75" selected>ぼかし解像度: 0.75</option><option value="0.5">ぼかし解像度: 0.5</option></select>
-    <span class="s">面の幅<input type="range" id="sw" min="4" max="12" step="0.1" value="7"></span>
-    <span class="s">面の高さ<input type="range" id="sh" min="5" max="16" step="0.1" value="13"></span>
-    <span class="s">身長<input type="range" id="ch" min="5" max="20" step="0.5" value="11"></span>
-    <span class="s">角の開き(2面)<input type="range" id="an" min="60" max="150" step="1" value="90"><b id="anv" style="display:inline-block;min-width:3.4em;margin-left:6px">90°</b></span>
-    <span class="s">端末幅<input type="range" id="pw" min="4" max="10" step="0.1" value="7"></span>
-    <span class="s">箱の倍率<input type="range" id="pk" min="0.3" max="1.2" step="0.05" value="0.6"></span>
-    <span class="s">窓の上下の枠(mm)<input type="range" id="frm" min="0" max="15" step="0.5" value="5"></span>
-    <span class="s">箱の上下<input type="range" id="py" min="-8" max="8" step="0.1" value="0"></span>
   </div></details>
-  <details id="d3"><summary>視点</summary><div class="g">
-    <span class="s">距離<input type="range" id="di" min="15" max="60" step="1" value="30"></span>
-    <span class="s">顔の追従<input type="range" id="gz" min="0" max="1" step="0.05" value="0.7"></span>
-    <button id="dm">ドラッグ: 向き</button>
-    <button id="fr">正面</button>
+  </details>
+  <details id="g_mmd"><summary>MMD調整</summary>
+  <details class="sub" id="m_ph"><summary>物理</summary><div class="g">
+    <label class="b">MMD重力<input type="range" id="mg" min="0.5" max="4" step="0.25" value="1"></label>
+    <label class="b">MMD物理の細かさ<input type="range" id="mpq" min="1" max="3" step="0.5" value="1.5"></label>
+    <label class="s"><input type="checkbox" id="mp" style="width:auto" checked>MMD物理</label>
+    <label class="s"><input type="checkbox" id="ph0" style="width:auto">開始・終了0.5秒は物理オフ</label>
+    <label class="s"><input type="checkbox" id="ph1" style="width:auto" checked>開始は基本姿勢から移行</label>
+    <label class="s"><input type="checkbox" id="pv" style="width:auto" checked>物理の速度上限</label>
+    <label class="b">速度上限 <span id="pvt">300</span><input type="range" id="pvs" min="50" max="600" step="10" value="300"></label>
   </div></details>
-  <details id="d4"><summary>キャラの動き</summary><div class="g">
+  <details class="sub" id="m_ft"><summary>足・接地</summary><div class="g">
+    <label class="b">接地補正(VRMA)<input type="range" id="mgr" min="0" max="2" step="0.1" value="1"></label>
+    <label class="b">足の交差防止(VMD)<input type="range" id="mxg" min="0" max="1" step="0.05" value="0.4"></label>
+    <label class="b">ひざの交差防止(IK後)<input type="range" id="mkc" min="0" max="1.5" step="0.05" value="0.7"></label>
+    <label class="b">足の当たり判定の太さ<input type="range" id="mlc" min="1" max="1.6" step="0.05" value="1.15"></label>
+  </div></details>
+  <details class="sub" id="m_ar"><summary>腕・手・見た目</summary><div class="g">
+    <label class="b">MMDの腕の角度(度)<input type="range" id="ma" min="0" max="60" step="1" value="20"></label>
+    <label class="b">MMDの手の握り<input type="range" id="mh" min="0" max="2.5" step="0.05" value="1.25"></label>
+    <label class="s"><input type="checkbox" id="mhf" style="width:auto">握りの向き反転</label>
+    <label class="s"><input type="checkbox" id="mr" style="width:auto" checked>MMDの待機ポーズをリラックス</label>
+    <label class="b">MMDの明るさ<input type="range" id="mb" min="0" max="1" step="0.05" value="0.85"></label>
+  </div></details>
+  </details>
+  <details id="g_model"><summary>モデル設定</summary>
+  <details class="sub" id="d_mv"><summary>動き（腕・瞬き・呼吸）</summary><div class="g">
     <span class="s">腕<input type="range" id="am" min="0" max="1.5" step="0.05" value="1.2"></span>
     <span class="s">肘の曲げ<input type="range" id="el" min="0" max="1.2" step="0.05" value="0.2"></span>
-    <span class="s">手の握り<input type="range" id="hd" min="0" max="2.5" step="0.05" value="1.25"></span>
-    <button id="hr">手を変える</button>
+    <span class="s">待機の手の握り<input type="range" id="hd" min="0" max="2.5" step="0.05" value="1.25"></span>
     <span class="s">肩の落ち<input type="range" id="sd" min="0" max="2" step="0.05" value="1"></span>
     <span class="s">腕の揺れ<input type="range" id="sy" min="0" max="3" step="0.1" value="1.5"></span>
     <span class="s">瞬き<input type="range" id="bl" min="0" max="2" step="0.1" value="0.3"></span>
     <span class="s">視線の泳ぎ<input type="range" id="wd" min="0" max="6" step="0.1" value="3"></span>
     <span class="s">呼吸<input type="range" id="br" min="0" max="3" step="0.1" value="1"></span>
   </div></details>
-  <details id="d5"><summary>光</summary><div class="g">
-    <select id="lt"><option value="0">光: 太陽</option><option value="1">光: 月</option><option value="2">光: スポット</option><option value="3">光: ランタン</option><option value="4">光: 白色</option><option value="5">光: 空に連動</option></select>
-    <select id="lh"><option value="0">ランタン: 足下</option><option value="1" selected>ランタン: 腰</option><option value="2">ランタン: 頭上</option></select>
-    <select id="nl"><option value="0">夜の光: 月</option><option value="1">夜の光: 暗い</option><option value="2">夜の光: ランタン</option><option value="3">夜の光: ランダム</option></select>
-    <span class="s">炎のゆらぎ<input type="range" id="fk" min="0" max="3" step="0.1" value="1.5"></span>
-    <label class="s"><input type="checkbox" id="rmo" style="width:auto" checked>逆光（輪郭）</label>
-    <input type="color" id="rmc" value="#bcd4ff" title="逆光・光だまりの色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
-    <span class="s">逆光の強さ<input type="range" id="rmi" min="0" max="3" step="0.05" value="1"></span>
-    <span class="s">逆光の左右<input type="range" id="rmx" min="-1" max="1" step="0.05" value="0.5"></span>
-    <label class="s"><input type="checkbox" id="rmf" style="width:auto" checked>逆光は地面に当てない</label>
-    <label class="s"><input type="checkbox" id="gfo" style="width:auto" checked>背景の光だまり</label>
-    <span class="s">光だまりの強さ<input type="range" id="gfi" min="0" max="1.5" step="0.05" value="0.35"></span>
-    <span class="s">光だまりの大きさ<input type="range" id="gfs" min="0.5" max="3" step="0.05" value="1"></span>
-    <span class="s">光だまり: モデルから後ろへ(cm)<input type="range" id="gfz" min="0" max="30" step="0.5" value="5"></span>
+  <details class="sub" id="d_pos"><summary>立ち位置</summary><div class="g">
+    <span class="s">立ち位置 左右<input type="range" id="stx" min="-15" max="15" step="0.1" value="0"></span>
+    <span class="s">立ち位置 前後<input type="range" id="stz" min="-15" max="100" step="0.1" value="0"></span>
+    <label class="s"><input type="checkbox" id="stc" style="width:auto" checked>高さ調整を使う</label>
+    <span class="s">立ち位置 高さ<input type="range" id="sty" min="-5" max="5" step="0.1" value="0"></span>
+    <button id="stR">立ち位置を戻す</button>
   </div></details>
-  <details id="d6"><summary>背景・床</summary><div class="g">
-    <select id="fl"><option value="0">床: なし</option><option value="1">床: 市松</option><option value="2">床: 木目</option><option value="3">床: 石畳</option><option value="4">床: 芝</option><option value="5">床: 無地</option></select>
-    <select id="bg"><option value="0">背景: 暗</option><option value="6">背景: 無し(黒)</option><option value="1">背景: 昼</option><option value="2">背景: 夕焼け</option><option value="3">背景: 夜</option><option value="4">背景: 屋内</option><option value="5">背景: 昼夜変化</option><option value="7">背景: 廊下</option></select>
-    <select id="tm"><option value="0">時間: ゆっくり</option><option value="1">時間: 実時刻</option></select>
+  <details class="sub" id="d_cam"><summary>視点・追従</summary><div class="g">
+    <span class="s">距離<input type="range" id="di" min="15" max="60" step="1" value="30"></span>
+    <span class="s">顔の追従<input type="range" id="gz" min="0" max="1" step="0.05" value="0.7"></span>
+  </div></details>
+  <details class="sub" id="d_ex"><summary>表情</summary><div class="g">
+    <select id="exs"><option value="">表情: 標準</option></select>
+    <span class="s">強さ<input type="range" id="exv" min="0" max="1" step="0.05" value="1"></span>
+    <label class="s"><input type="checkbox" id="exa" style="width:auto" checked>自動で変える</label>
+    <span class="s">変わる間隔(秒)<input type="range" id="exi" min="3" max="30" step="1" value="10"></span>
+    <label class="s"><input type="checkbox" id="exl" style="width:auto" checked>表情中も視線を動かす</label>
+  </div></details>
+  <details class="sub" id="d_sw"><summary>揺れもの</summary><div class="g">
+    <span class="s">揺れの強さ<input type="range" id="sk" min="0" max="3" step="0.1" value="1"></span>
+    <label class="s"><input type="checkbox" id="lc" style="width:auto" checked>脚のコライダー</label>
+    <span class="s">脚コライダーの大きさ<input type="range" id="lcs" min="0.5" max="1.5" step="0.05" value="1"></span>
+  </div></details>
+  </details>
+  <details id="g_stage"><summary>背景設定</summary>
+  <details class="sub" id="s_tp"><summary>透過ディスプレイ（表示ボタンで「透過」）</summary><div class="g">
+    <span class="s">使い方<select id="tpu"><option value="0">卓上（置いて使う）</option><option value="1">手持ち</option></select></span>
+    <label class="s"><input type="checkbox" id="tpg" style="width:auto">傾きセンサーを使う（手持ち用）</label>
+    <span class="s">携帯の傾き(度・センサーOFF時。後ろへ倒すと＋)<input type="range" id="tpt" min="-30" max="60" step="1" value="0"></span>
+    <label class="s"><input type="checkbox" id="tpa" style="width:auto">モデルを背景に固定（今の位置で固定）</label>
+    <button id="tpz">向きを合わせ直す（固定し直す）</button>
+    <span class="lb" data-cam>背面カメラの背景（透過モードのみ）</span>
+    <span class="s" data-cam>背景までの距離(m)<input type="range" id="cbd" min="0.1" max="8" step="0.1" value="4"></span>
+    <span class="s" data-cam>背面カメラの画角(度・長辺)<input type="range" id="cbf" min="40" max="120" step="1" value="65"></span>
+    <span class="s" data-cam>定期的に撮り直す間隔(秒・0で撮り直さない／3〜60)<input type="range" id="cbi" min="0" max="60" step="1" value="0"></span>
+    <span class="s" data-cam>傾きがこの角度ずれて止まったら撮り直す(度・0で無し)<input type="range" id="cbt" min="0" max="60" step="5" value="20"></span>
+    <label class="s" data-cam><input type="checkbox" id="cbw" style="width:auto" checked>背面の超広角カメラが選べるなら優先する</label>
+    <span class="s" data-cam>背面カメラ<select id="cbs" style="max-width:48vw"><option value="">自動（超広角を優先）</option></select></span>
+    <button id="cbl" data-cam>カメラ一覧を更新</button>
+    <label class="s" data-cam><input type="checkbox" id="cbe" style="width:auto">写真の範囲を外れそうになったら撮り直す</label>
+  </div></details>
+  <details class="sub" id="s_stage"><summary>舞台（背景・床・奥の人）</summary><div class="g">
+    <select id="bg"><option value="0">背景: 暗</option><option value="6">背景: 無し(黒)</option><option value="1">背景: 昼</option><option value="2">背景: 夕焼け</option><option value="3">背景: 夜</option><option value="4">背景: 屋内</option><option value="5">背景: 昼夜変化</option><option value="7">背景: 廊下</option><option value="8" disabled>背景: 背面カメラ（透過モード専用）</option></select>
+    <select id="fl"><option value="0">床: なし</option><option value="1">床: 市松</option><option value="2">床: 木目</option><option value="3">床: 石畳</option><option value="4">床: 芝</option><option value="5">床: 無地</option><option value="6">床: 写真</option></select>
     <span class="s">壁までの距離<input type="range" id="rk" min="1.1" max="4" step="0.1" value="1.5"></span>
     <label class="s"><input type="checkbox" id="b2" style="width:auto">奥にもう1人</label>
     <label class="b">奥の人のモデル(.vrm)<input type="file" id="fb"></label>
@@ -134,16 +193,23 @@
     <span class="s">奥の人の位置<input type="range" id="b2z" min="0" max="0.9" step="0.05" value="0.5"></span>
     <span class="s">廊下の長さ(m相当)<input type="range" id="cd" min="10" max="20" step="1" value="15"></span>
     <span class="s">廊下の奥の暗さ<input type="range" id="cfg" min="0" max="0.9" step="0.05" value="0.35"></span>
+    <span class="lb">床の写真（「床: 写真」を選んだとき）</span>
+    <span class="s">模様の大きさ(cm)<input type="range" id="fls" min="20" max="200" step="5" value="60"></span>
+    <span class="s">縦横比<input type="range" id="flr" min="0.5" max="2" step="0.05" value="1"></span>
+    <label class="s"><input type="checkbox" id="fln" style="width:auto" checked>つなぎ目をなくす（鏡写しで並べる）</label>
+    <label class="s"><input type="checkbox" id="flc" style="width:auto" checked>床の色を環境光に反映</label>
+  </div></details>
+  <details class="sub" id="s_sky"><summary>空と時間</summary><div class="g">
+    <select id="tm"><option value="0">時間: ゆっくり</option><option value="1">時間: 実時刻</option></select>
     <span class="s">時間の流れ<input type="range" id="ts" min="0" max="5" step="0.1" value="1"></span>
     <span class="s">雲の流れ<input type="range" id="cl" min="0" max="5" step="0.1" value="1"></span>
     <span class="s">雲の濃さ<input type="range" id="cq" min="0" max="1.5" step="0.05" value="1"></span>
     <span class="s">雲の量<input type="range" id="cv" min="0" max="1" step="0.02" value="0.5"></span>
     <span class="s">雲の大きさ<input type="range" id="cz" min="0.5" max="3" step="0.1" value="1"></span>
   </div></details>
-  <details id="d7"><summary>小物</summary><div class="g">
+  <details class="sub" id="s_prop"><summary>小物・妖精</summary><div class="g">
+    <span class="lb">小物（位置・光・揺れ）</span>
     <span id="pr" style="display:contents">
-    <label class="b">小物を追加(.glb)<input type="file" id="of"></label>
-    <select id="oo"><option value="-1">（小物なし）</option></select>
     <span class="s">左右<input type="range" id="ox" min="-15" max="15" step="0.1" value="0"></span>
     <span class="s">前後<input type="range" id="oz" min="-15" max="15" step="0.1" value="0"></span>
     <span class="s">高さ<input type="range" id="oy" min="0" max="16" step="0.1" value="0"></span>
@@ -154,24 +220,8 @@
     <span class="s">光の強さ<input type="range" id="oli" min="0.2" max="3" step="0.05" value="1"></span>
     <label class="s"><input type="checkbox" id="ot" style="width:auto">すり抜け</label>
     <label class="s"><input type="checkbox" id="ow" style="width:auto">揺れ</label>
-    <button id="od">小物を外す</button>
     </span>
-    <span class="s">揺れの強さ<input type="range" id="sk" min="0" max="3" step="0.1" value="1"></span>
-    <label class="s"><input type="checkbox" id="lc" style="width:auto" checked>脚のコライダー</label>
-    <span class="s">脚コライダーの大きさ<input type="range" id="lcs" min="0.5" max="1.5" step="0.05" value="1"></span>
-  </div></details>
-  <details id="d9"><summary>粒（蛍・雪・花びら・雨）</summary><div class="g">
-    <select id="ptk"><option value="0">粒: なし</option><option value="1">粒: 蛍</option><option value="2">粒: 雪</option><option value="3">粒: 花びら</option><option value="4">粒: 雨</option></select>
-    <select id="ptw"><option value="0">場所: 箱の中</option><option value="1">場所: 窓の手前</option><option value="2" selected>場所: 両方</option></select>
-    <span class="s">数<input type="range" id="ptn" min="5" max="600" step="5" value="80"></span>
-    <span class="s">速さ<input type="range" id="pts" min="0.2" max="3" step="0.05" value="1"></span>
-    <span class="s">大きさ<input type="range" id="ptz" min="0.3" max="3" step="0.05" value="1"></span>
-    <span class="s">風(左右)<input type="range" id="ptd" min="-1" max="1" step="0.05" value="0"></span>
-    <span class="s">手前の奥行き(cm)<input type="range" id="ptf" min="3" max="40" step="1" value="12"></span>
-    <input type="color" id="ptc" value="#d9ff7a" title="粒の色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
-    <label class="s"><input type="checkbox" id="ptb" style="width:auto">蛍は夜だけ</label>
-  </div></details>
-  <details id="d10"><summary>妖精（光る小物）</summary><div class="g">
+    <span class="lb">妖精</span>
     <select id="fyn"><option value="0">妖精: なし</option><option value="1">妖精: 1匹</option><option value="2" selected>妖精: 2匹</option><option value="3">妖精: 3匹</option></select>
     <span class="s">大きさ<input type="range" id="fys" min="0.15" max="3" step="0.05" value="0.6"></span>
     <span class="s">速さ<input type="range" id="fyv" min="0.2" max="3" step="0.05" value="1"></span>
@@ -188,17 +238,33 @@
     <label class="s"><input type="checkbox" id="fyt" style="width:auto" checked>きらめく粉</label>
     <label class="s"><input type="checkbox" id="fyb" style="width:auto">夜だけ</label>
   </div></details>
-  <details id="d11"><summary>表情</summary><div class="g">
-    <select id="exs"><option value="">表情: 標準</option></select>
-    <span class="s">強さ<input type="range" id="exv" min="0" max="1" step="0.05" value="1"></span>
-    <label class="s"><input type="checkbox" id="exa" style="width:auto" checked>自動で変える</label>
-    <span class="s">変わる間隔(秒)<input type="range" id="exi" min="3" max="30" step="1" value="10"></span>
-    <label class="s"><input type="checkbox" id="exl" style="width:auto" checked>表情中も視線を動かす</label>
+  <details class="sub" id="s_env"><summary>環境（光・粒）</summary><div class="g">
+    <span class="lb">光</span>
+    <select id="lt"><option value="0">光: 太陽</option><option value="1">光: 月</option><option value="2">光: スポット</option><option value="3">光: ランタン</option><option value="4">光: 白色</option><option value="5">光: 空に連動</option></select>
+    <select id="lh"><option value="0">ランタン: 足下</option><option value="1" selected>ランタン: 腰</option><option value="2">ランタン: 頭上</option></select>
+    <select id="nl"><option value="0">夜の光: 月</option><option value="1">夜の光: 暗い</option><option value="2">夜の光: ランタン</option><option value="3">夜の光: ランダム</option></select>
+    <span class="s">炎のゆらぎ<input type="range" id="fk" min="0" max="3" step="0.1" value="1.5"></span>
+    <label class="s"><input type="checkbox" id="rmo" style="width:auto" checked>逆光（輪郭）</label>
+    <input type="color" id="rmc" value="#bcd4ff" title="逆光・光だまりの色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <span class="s">逆光の強さ<input type="range" id="rmi" min="0" max="3" step="0.05" value="1"></span>
+    <span class="s">逆光の左右<input type="range" id="rmx" min="-1" max="1" step="0.05" value="0.5"></span>
+    <label class="s"><input type="checkbox" id="rmf" style="width:auto" checked>逆光は地面に当てない</label>
+    <label class="s"><input type="checkbox" id="gfo" style="width:auto" checked>背景の光だまり</label>
+    <span class="s">光だまりの強さ<input type="range" id="gfi" min="0" max="1.5" step="0.05" value="0.35"></span>
+    <span class="s">光だまりの大きさ<input type="range" id="gfs" min="0.5" max="3" step="0.05" value="1"></span>
+    <span class="s">光だまり: モデルから後ろへ(cm)<input type="range" id="gfz" min="0" max="30" step="0.5" value="5"></span>
+    <span class="lb">粒</span>
+    <select id="ptk"><option value="0">粒: なし</option><option value="1">粒: 蛍</option><option value="2">粒: 雪</option><option value="3">粒: 花びら</option><option value="4">粒: 雨</option></select>
+    <select id="ptw"><option value="0">場所: 箱の中</option><option value="1">場所: 窓の手前</option><option value="2" selected>場所: 両方</option></select>
+    <span class="s">数<input type="range" id="ptn" min="5" max="600" step="5" value="80"></span>
+    <span class="s">速さ<input type="range" id="pts" min="0.2" max="3" step="0.05" value="1"></span>
+    <span class="s">大きさ<input type="range" id="ptz" min="0.3" max="3" step="0.05" value="1"></span>
+    <span class="s">風(左右)<input type="range" id="ptd" min="-1" max="1" step="0.05" value="0"></span>
+    <span class="s">手前の奥行き(cm)<input type="range" id="ptf" min="3" max="40" step="1" value="12"></span>
+    <input type="color" id="ptc" value="#d9ff7a" title="粒の色" style="width:2.8em;height:1.9em;padding:0;border:0;background:none">
+    <label class="s"><input type="checkbox" id="ptb" style="width:auto">蛍は夜だけ</label>
   </div></details>
-  <details id="d8"><summary>保存</summary><div class="g">
-    <button id="cm">モデルを全部消す</button>
-    <button id="clr">保存を消す</button>
-  </div></details>
+  </details>
 </div>
 
 <script type="importmap">
@@ -217,6 +283,7 @@ body.rcv #rv{display:block} body.rcv #ui{display:none}
 #cp.on{display:block} #cp textarea{width:100%;height:76px;margin:2px 0 4px;font-size:11px;box-sizing:border-box} #cp button{margin:2px}
   #cp h4{margin:10px 0 2px;font-size:12px;opacity:.85;font-weight:600} #cp .tb.a{background:#3a6b64} #cp .hp{font-size:12px;opacity:.85;line-height:1.6}
 </style>
+<div id="fp"><canvas id="fpc"></canvas><div id="fpb"><span id="fpm"></span><button id="fpr">やり直し</button><button id="fpo" disabled>決定</button><button id="fpx">キャンセル</button></div></div>
 <video id="rv" autoplay muted playsinline></video>
 <div id="cp"><b>携帯2台で2面</b>
   <div><button id="cpmH" class="tb a">母機</button><button id="cpmC" class="tb">子機</button></div>
@@ -419,11 +486,16 @@ function skyFrame(dt) {
   cloudU.col.value.copy(P.cl); cloudU.op.value = Math.min(1, P.ca * val('cq')); cloudU.cov.value = val('cv'); cloudU.sc.value = 2.5 / val('cz'); cloudU.t.value += dt * 0.004;
   cloud.rotation.y += dt * 0.012 * val('cl');
 }
+let photoTex = null, photoAvg = null;                   // 床の写真（真上から見た形に直したもの）と、その平均色
 const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });   // 部屋の床と同じ高さで重なるので手前に出す
 const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), floorMat);
 floorMesh.rotation.x = -Math.PI / 2; floorMesh.receiveShadow = true; scene.add(floorMesh);
 const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMat);
 dome.renderOrder = -2; dome.frustumCulled = false; scene.add(dome);
+// 背面カメラの背景：奥の大きな板（写真の外側は端を引き伸ばす）。A=新しい写真 B=前の写真（切り替え中だけ下に見せる）
+let camWideTried = false, camUsedWide = false, camWide = null, camPq = new THREE.Quaternion(), camStill = 0, camTex = null, camAsp = 16 / 9, camBusy = false, camLast = 0, camFade = 0, camChk = 0;
+const camMk = o => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ toneMapped: false, depthWrite: false })); m.renderOrder = o; m.frustumCulled = false; m.visible = false; m.userData.q = new THREE.Quaternion(); scene.add(m); return m; };
+const camA = camMk(-4), camB = camMk(-5);
 const wallMat = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.12 });   // 光が当たらない向きの壁が真っ黒にならないよう、わずかに自発光
 const ceilMat = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, color: '#e8e4dc', emissive: '#e8e4dc', emissiveIntensity: 0.1 });
 const roomFl = new THREE.MeshStandardMaterial({ side: THREE.BackSide, roughness: 1, color: '#6b5b48', emissive: '#6b5b48', emissiveIntensity: 0.1, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 4 });   // 床メッシュ・影用の床より奥へ（床があるときは描かない）
@@ -469,11 +541,15 @@ function applyFloor() {
   const k = +$('fl').value, u = S.u, c = S.c;
   floorMesh.visible = k > 0; shadowFloor.visible = k === 0; roomFl.visible = k === 0;                           // 床がある間は影用の透明な床を使わない
   if (!k) { buildFrame(); return; }
-  const f = FLOOR[k], t = f ? T('fl' + k, () => ctex(f[1], f[1], f[2], 3)) : null, size = S.r * 8;
-  setMap(floorMat, t); floorMat.color.set(f ? '#ffffff' : '#cfcfd4');
+  const f = FLOOR[k], ph = k === 6, t = ph ? photoTex : f ? T('fl' + k, () => ctex(f[1], f[1], f[2], 3)) : null, size = S.r * 8;
+  setMap(floorMat, t); floorMat.color.set(t ? '#ffffff' : '#cfcfd4');
   const cor = +$('bg').value === 7 ? corridorBox() : null, sx = cor ? 2 * cor.hw : size, sz = cor ? cor.L : size;   // 廊下のときは廊下の形に合わせる
   floorMesh.scale.set(sx, sz, 1); floorMesh.position.set(c.x, 0.2 * u, cor ? -cor.L / 2 : c.z);
-  if (t) t.repeat.set(sx / u / f[0], sz / u / f[0]);
+  if (t && ph) {                                       // 写真：大きさ(cm)と縦横比で敷き詰める。鏡写しにするとつなぎ目が出ない
+    const cm = val('fls'), w = $('fln').checked ? THREE.MirroredRepeatWrapping : THREE.RepeatWrapping;
+    t.repeat.set(sx / u / cm, sz / u / (cm * val('flr')));
+    if (t.wrapS !== w) { t.wrapS = t.wrapT = w; t.needsUpdate = true; }
+  } else if (t) t.repeat.set(sx / u / f[0], sz / u / f[0]);
   S.fsx = sx; buildFrame();
 }
 // 部屋：箱の平面形と相似な多角柱（壁・天井・床）。2・3面は四角い箱とみなして閉じる。k は箱に対する倍率
@@ -562,9 +638,9 @@ function applyBg() {
   }
   scene.fog = null;
   corU.uDk.value = k === 7 ? val('cfg') : 0; corU.uZ1.value = k === 7 ? corridorBox().L : 1;   // 奥ほど暗く（カメラではなく廊下の位置で決まるので、横から見ても板に見えない）
-  applyFloor(); placeBack();
+  applyFloor(); placeBack(); placeCamBg();
 }
-$('rk').oninput = applyBg; $('cd').oninput = applyBg; $('cfg').oninput = applyBg; $('b2s').onchange = placeBack; $('fl').onchange = applyFloor; $('bg').onchange = () => { applyBg(); if (+$('bg').value === 5) { $('lt').value = '5'; light(); } };   // 昼夜変化にしたら光も空に連動
+$('rk').oninput = applyBg; $('cd').oninput = applyBg; $('cfg').oninput = applyBg; $('b2s').onchange = placeBack; $('fl').onchange = applyFloor; $('bg').onchange = () => { applyBg(); if (+$('bg').value === 5) { $('lt').value = '5'; light(); } if (+$('bg').value === 8) { $('fl').value = '0'; applyFloor(); if (!camTex) st('「背景を撮る」で背面カメラの景色を取り込みます。'); } };   // 昼夜変化にしたら光も空に連動
 
 function light() {
   const u = S.u, h = val('sh') * u, c = S.c.clone(), p = +$('lt').value;
@@ -577,7 +653,7 @@ function light() {
   if (p === 2) { hemi.color.set(0x445066); hemi.groundColor.set(0x080808); hemi.intensity = 0.12; sun.color.set(0xffffff); sun.intensity = 3.2; sun.position.set(c.x, 1.2 * h, c.z + 0.4 * h); }
   if (p === 3) { hemi.color.set(0xffc890); hemi.groundColor.set(0x221108); hemi.intensity = 0.25; lamp.intensity = 2; }
   if (p === 4) { hemi.color.set(0xffffff); hemi.groundColor.set(0x999999); hemi.intensity = 1.4; sun.color.set(0xffffff); sun.intensity = 2; sun.position.set(c.x + 0.3 * h, 0.8 * h, c.z + 0.8 * h); }
-  sun.target.position.copy(tgt); spot.target.position.copy(tgt); rimApply();
+  sun.target.position.copy(tgt); spot.target.position.copy(tgt); tintGround(); rimApply();
   Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h, near: 0.1 * u, far: 4 * h }); sun.shadow.camera.updateProjectionMatrix();
   spot.shadow.camera.near = 0.1 * u; spot.shadow.camera.far = 4 * h;
   lamp.shadow.camera.near = 0.05 * u; lamp.shadow.camera.far = 4 * h;
@@ -1202,18 +1278,345 @@ function relaxMMD(dt) {
     j.B.quaternion.slerp(t, k);
   }
 }
-async function shrinkImg(f, max = 1024) {              // 大きなテクスチャは縮小して渡す（メモリ不足で落ちるのを避ける）。読めない形式（tga等）はそのまま
-  if (!/\.(png|jpe?g|bmp|webp)$/i.test(f.name)) return f;
-  try {
-    const bm = await createImageBitmap(f);
-    if (Math.max(bm.width, bm.height) <= max) { bm.close(); return f; }
-    const sc = max / Math.max(bm.width, bm.height), cv = document.createElement('canvas');
-    cv.width = Math.max(1, Math.round(bm.width * sc)); cv.height = Math.max(1, Math.round(bm.height * sc));
-    cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height); bm.close();
-    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
-    return blob ? new File([blob], f.name, { type: 'image/png' }) : f;
-  } catch { return f; }
+// ==== shared/common.js ====
+// model_viewer と vrm_lantern で共通のモーション変換・読み込み補助。build.js が各HTMLの //@@include の位置に埋め込む。
+// 依存：THREE, MMD_SCALE, （任意）val(id) / st(text)。val・st が無い、またはスライダーが無い設定は既定値で動く（gv 参照）。
+function zipName(n) {                                    // 旧Windows製zipは名前が Shift_JIS のことがある → 文字化けを直す
+  if (!/[\x80-\xff]/.test(n) || /[^\x00-\xff]/.test(n)) return n;
+  const b = Uint8Array.from(n, c => c.charCodeAt(0));
+  try { return utf8.decode(b); } catch { return sjis.decode(b); }
 }
+
+function fixVrmaSpec(buf) {
+  try {
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546C67 || dv.getUint32(16, true) !== 0x4E4F534A) return buf;   // 'glTF' と先頭 JSON チャンクを確認
+    const jl = dv.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl)));
+    const ex = json.extensions?.VRMC_vrm_animation;
+    if (!ex || ex.specVersion) return buf;
+    ex.specVersion = '1.0-draft';
+    let jb = new TextEncoder().encode(JSON.stringify(json));
+    const pad = (4 - jb.length % 4) % 4;
+    if (pad) { const t = new Uint8Array(jb.length + pad).fill(0x20); t.set(jb); jb = t; }
+    const rest = new Uint8Array(buf, 20 + jl);                                   // 以降のチャンク（BIN など）
+    const out = new Uint8Array(20 + jb.length + rest.length);
+    out.set(new Uint8Array(buf, 0, 20)); out.set(jb, 20); out.set(rest, 20 + jb.length);
+    const ov = new DataView(out.buffer);
+    ov.setUint32(8, out.length, true); ov.setUint32(12, jb.length, true);
+    return out.buffer;
+  } catch (e) { console.warn('fixVrmaSpec', e); return buf; }
+}
+
+async function shrinkImg(f,max=1024){   // 大きなテクスチャは縮小して渡す（4K画像が何枚もあるとメモリ不足でタブごと落ちる）。読めない形式（tga等）はそのまま
+  if(!/\.(png|jpe?g|bmp|webp)$/i.test(f.name))return f;
+  try{
+    const bm=await createImageBitmap(f);
+    if(Math.max(bm.width,bm.height)<=max){bm.close();return f;}
+    const sc=max/Math.max(bm.width,bm.height),cv=document.createElement('canvas');
+    cv.width=Math.max(1,Math.round(bm.width*sc));cv.height=Math.max(1,Math.round(bm.height*sc));
+    cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);bm.close();
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    cv.width=cv.height=0;
+    return blob?new File([blob],f.name,{type:'image/png'}):f;
+  }catch{return f;}
+}
+
+function limitDecay(sm, rawY, base = 0.03) {   // base：1フレームで戻してよい量（既定はMMD単位）
+  let prev = rawY(0);
+  for (let i = 1; i < sm.length; i++) {
+    const y = rawY(i), lim = 0.5 * Math.max(0, y - prev) + base;
+    sm[i] = Math.max(sm[i], sm[i - 1] - lim); prev = y;
+  }
+}
+
+// ==== 接地補正 ====
+// 座り込みなどで体が床面より下に沈む分だけ、腰（MMDはセンター）を持ち上げる。持ち上げるだけなので、立ち・歩き・ジャンプには効かない。
+// 設定値は gv(id, 既定) で取る（val() が無い／スライダーが無いHTMLでは既定値）：
+//   mgr   全体の強さ（1。0で補正なし）
+//   mhip  尻の高さ：股関節が床から保つ高さ（脚の長さに対する％。既定8）
+//   msole 足裏の余裕：かかと・つま先が床から保つ高さ（脚の長さに対する％。既定0＝床ぴったり）
+function gv(id, d) { try { const v = typeof val === 'function' ? val(id) : d; return Number.isFinite(v) ? v : d; } catch (e) { return d; } }
+var groundFixLast = '';   // 直近の接地補正の結果（ビューアーのステータス表示用）
+function groundNote(t) { groundFixLast = t; if (typeof st === 'function') st(t); }
+
+// 必要な持ち上げ量をなめらかにする：前後2フレームで最大を取ってから平均（必ず必要量以上になる）
+function smoothNeed(dy) {
+  const N = dy.length, mx = new Float32Array(N), sm = new Float32Array(N);
+  for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) m = Math.max(m, dy[j]); mx[i] = m; }
+  for (let i = 0; i < N; i++) { let t = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) { t += mx[j]; c++; } sm[i] = t / c; }
+  return sm;
+}
+
+// MMD用。tracks=.bones[…] のトラック群、times=30fpsの時刻列。ikOn=true（VMD）は足IKが脚を決めるので股関節だけ見る。
+// ikOn=false（VRMA→MMD）は 股関節・ひざ・足首・足裏（かかと／つま先）を見る。足裏は「立ち姿の足首から足裏までの距離」を足の向きで回して求める。
+// 返り値：補正したトラック群（補正不要なら渡したものをそのまま返す）
+function groundFixMMD(tracks, mesh, times, ikOn) {
+  const gk = gv('mgr', 1), N = times.length;
+  if (!(gk > 0) || !N) return tracks;
+  const bn = n => mesh.skeleton.getBoneByName(n), cen = bn('センター');
+  if (!cen) return tracks;
+  try {
+    mesh.pose(); mesh.updateMatrixWorld(true);
+    const tv = new THREE.Vector3(), wy = b => { b.getWorldPosition(tv); mesh.worldToLocal(tv); return tv.y; };
+    const mq = mesh.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const lq = (b, o) => b.getWorldQuaternion(o).premultiply(mq);        // メッシュ基準の向き
+    const floor = mesh.geometry.boundingBox?.min.y ?? 0;                 // 読み込み時に床へ合わせた、モデルの最下点
+    const legs = [];
+    for (const s of ['左', '右']) {
+      const h = bn(s + '足'), kn = bn(s + 'ひざ'), an = bn(s + '足首'), tb = bn(s + 'つま先') || bn(s + '足先EX');
+      if (h && kn && an) legs.push({ h, kn, an, tb });
+    }
+    if (!legs.length) return tracks;
+    const Lh = wy(legs[0].h) - floor, ya0 = wy(legs[0].an) - floor;       // 股関節の高さ／足首の高さ（立ち姿）
+    for (const l of legs) {
+      l.ya = wy(l.an) - floor; l.qa = lq(l.an, new THREE.Quaternion()).invert();      // 立ち姿の、足首の高さと向き（の逆）
+      if (l.tb) { l.th = wy(l.tb) - floor; l.qt = lq(l.tb, new THREE.Quaternion()).invert(); }
+    }
+    const hipR = gv('mhip', 8) / 100 * Lh * gk, kneeR = 0.05 * Lh * gk, ankR = Math.min(ya0, 0.04 * Lh) * gk, soleR = gv('msole', 0) / 100 * Lh * gk;
+    const ct = tracks.find(t => t.name === '.bones[センター].position'), cf = ct ? ct.createInterpolant() : null;
+    const bind = tracks.map(t => { const m = /^\.bones\[(.+)\]\.(quaternion|position)$/.exec(t.name); return m && bn(m[1]) ? { b: bn(m[1]), p: m[2] === 'position', f: t.createInterpolant() } : null; }).filter(Boolean);
+    const dy = new Float32Array(N), v = new THREE.Vector3(), d = new THREE.Quaternion(), qc = new THREE.Quaternion();
+    for (let i = 0; i < N; i++) {
+      for (const x of bind) { const a = x.f.evaluate(times[i]); if (x.p) x.b.position.set(a[0], a[1], a[2]); else x.b.quaternion.set(a[0], a[1], a[2], a[3]); }
+      mesh.updateMatrixWorld(true);
+      let need = 0;
+      for (const l of legs) {
+        need = Math.max(need, hipR - (wy(l.h) - floor));
+        if (ikOn) continue;
+        need = Math.max(need, kneeR - (wy(l.kn) - floor));
+        const ay = wy(l.an) - floor;
+        need = Math.max(need, ankR - ay);
+        d.copy(lq(l.an, qc)).multiply(l.qa);                                         // 立ち姿からの足の回転
+        need = Math.max(need, soleR - (ay + v.set(0, -l.ya, 0).applyQuaternion(d).y));   // かかと
+        if (l.tb) { const ty = wy(l.tb) - floor; d.copy(lq(l.tb, qc)).multiply(l.qt); need = Math.max(need, soleR - (ty + v.set(0, -l.th, 0).applyQuaternion(d).y)); }   // つま先
+      }
+      dy[i] = need;
+    }
+    mesh.pose();
+    const sm = smoothNeed(dy);
+    limitDecay(sm, i => cf ? cf.evaluate(times[i])[1] : cen.position.y);
+    let top = 0; for (let i = 0; i < N; i++) top = Math.max(top, sm[i]);
+    if (top <= 1e-4) return tracks;
+    const vals = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const a = cf ? cf.evaluate(times[i]) : [cen.position.x, cen.position.y, cen.position.z];
+      vals[i * 3] = a[0]; vals[i * 3 + 1] = a[1] + sm[i]; vals[i * 3 + 2] = a[2];
+    }
+    groundNote('接地補正：最大 ' + (top * MMD_SCALE * 100).toFixed(1) + 'cm 持ち上げ');
+    return tracks.filter(t => t !== ct).concat(new THREE.VectorKeyframeTrack('.bones[センター].position', times, vals));
+  } catch (e) { console.warn('接地補正', e); return tracks; } finally { mesh.pose(); }
+}
+
+// VMD→MMD：animationBuilder で作ったクリップに接地補正を足す
+function groundFixMMDClip(clip, mesh) {
+  const N = Math.ceil(clip.duration * 30 - 1e-3) + 1, times = new Float32Array(N);
+  for (let i = 0; i < N; i++) times[i] = Math.min(i / 30, clip.duration);
+  const tr = groundFixMMD(clip.tracks, mesh, times, true);
+  return tr === clip.tracks ? clip : new THREE.AnimationClip(clip.name, clip.duration, tr);
+}
+
+// VRM用（VRMA→VRM）。createVRMAnimationClip で作ったクリップに足す。腰の位置・向きと脚の向きから、股関節・ひざ・足首・足裏（かかと／つま先）の高さを順に求め、足りない分だけ腰を持ち上げる。
+// 正規化ボーン（回転なしの基準姿勢）で計算する。床は y=0。呼ぶ時点で正規化ボーンが基準姿勢に戻っていること（stopMotion 後）。
+function groundFixVRM(clip, vrm) {
+  const gk = gv('mgr', 1);
+  if (!(gk > 0)) return clip;
+  const node = n => vrm.humanoid.getNormalizedBoneNode(n), hn = node('hips');
+  if (!hn) return clip;
+  const sides = ['left', 'right'].map(w => { const U = node(w + 'UpperLeg'), L = node(w + 'LowerLeg'), F = node(w + 'Foot'); return U && L && F ? { U, L, F, T: node(w + 'Toes') } : null; }).filter(Boolean);
+  if (!sides.length) return clip;
+  try {
+    const r0 = hn.position.clone(), sc = MMD_SCALE * (r0.y / 0.92), Lh = r0.y + sides[0].U.position.y;   // 基準の腰の位置／体の大きさの比（vmdToVRMと同じ）／股関節の高さ
+    for (const s of sides) { s.ya = r0.y + s.U.position.y + s.L.position.y + s.F.position.y; if (s.T) s.th = s.ya + s.T.position.y; }   // 立ち姿の足首・つま先の高さ
+    const hipR = gv('mhip', 8) / 100 * Lh * gk, kneeR = 0.05 * Lh * gk, ankR = Math.min(sides[0].ya, 0.04 * Lh) * gk, soleR = gv('msole', 0) / 100 * Lh * gk;
+    const N = Math.ceil(clip.duration * 30 - 1e-3) + 1, times = new Float32Array(N);
+    for (let i = 0; i < N; i++) times[i] = Math.min(i / 30, clip.duration);
+    const tp = clip.tracks.find(t => t.name === hn.name + '.position'), itp = (n, ty) => { const t = clip.tracks.find(x => x.name === n.name + '.' + ty); return t ? t.createInterpolant() : null; };
+    const fh = tp ? tp.createInterpolant() : null, fq = itp(hn, 'quaternion');
+    for (const s of sides) { s.fU = itp(s.U, 'quaternion'); s.fL = itp(s.L, 'quaternion'); s.fF = itp(s.F, 'quaternion'); s.fT = s.T ? itp(s.T, 'quaternion') : null; }
+    const Q = (f, t, o) => { if (!f) return o.identity(); const a = f.evaluate(t); return o.set(a[0], a[1], a[2], a[3]); };
+    const V = () => new THREE.Vector3(), K = () => new THREE.Quaternion();
+    const P = V(), pU = V(), pL = V(), pF = V(), pT = V(), v = V(), Qh = K(), Qx = K(), Ra = K(), Rb = K(), Rc = K(), Rd = K();
+    const dy = new Float32Array(N), raw = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const t = times[i];
+      if (fh) { const a = fh.evaluate(t); P.set(a[0], a[1], a[2]); } else P.copy(r0);
+      Q(fq, t, Qh); raw[i] = P.y;
+      let need = 0;
+      for (const s of sides) {
+        pU.copy(s.U.position).applyQuaternion(Qh).add(P);
+        Ra.copy(Qh).multiply(Q(s.fU, t, Qx));                                   // 太ももの向き
+        pL.copy(s.L.position).applyQuaternion(Ra).add(pU);
+        Rb.copy(Ra).multiply(Q(s.fL, t, Qx));                                   // すねの向き
+        pF.copy(s.F.position).applyQuaternion(Rb).add(pL);
+        Rc.copy(Rb).multiply(Q(s.fF, t, Qx));                                   // 足の向き
+        need = Math.max(need, hipR - pU.y, kneeR - pL.y, ankR - pF.y, soleR - (pF.y + v.set(0, -s.ya, 0).applyQuaternion(Rc).y));   // 股関節・ひざ・足首・かかと
+        if (s.T) { pT.copy(s.T.position).applyQuaternion(Rc).add(pF); Rd.copy(Rc).multiply(Q(s.fT, t, Qx)); need = Math.max(need, soleR - (pT.y + v.set(0, -s.th, 0).applyQuaternion(Rd).y)); }   // つま先
+      }
+      dy[i] = need;
+    }
+    const sm = smoothNeed(dy);
+    limitDecay(sm, i => raw[i], 0.03 * sc);
+    let top = 0; for (let i = 0; i < N; i++) top = Math.max(top, sm[i]);
+    if (top <= 1e-4) return clip;
+    const vals = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { const a = fh ? fh.evaluate(times[i]) : [r0.x, r0.y, r0.z]; vals[i * 3] = a[0]; vals[i * 3 + 1] = a[1] + sm[i]; vals[i * 3 + 2] = a[2]; }
+    groundNote('接地補正（VRM）：最大 ' + (top * 100).toFixed(1) + 'cm 持ち上げ');
+    return new THREE.AnimationClip(clip.name, clip.duration, clip.tracks.filter(t => t !== tp).concat(new THREE.VectorKeyframeTrack(hn.name + '.position', times, vals)));
+  } catch (e) { console.warn('接地補正(VRM)', e); return clip; }
+}
+
+function vrmaToMMD(anim, mesh) {
+  mesh.pose();
+  const bn = n => mesh.skeleton.getBoneByName(n);
+  const rest = b => { const v = new THREE.Vector3(); for (let x = b; x?.isBone; x = x.parent) v.add(x.position); return v; };   // 初期ポーズでの位置（MMD単位）
+  const Q = () => new THREE.Quaternion();
+  const corr = (a, b, T) => bn(a) && bn(b) ? Q().setFromUnitVectors(rest(bn(b)).sub(rest(bn(a))).normalize(), T) : Q();
+  const rot = anim.humanoidTracks.rotation, itp = new Map([...rot].map(([k, t]) => [k, t.createInterpolant()]));
+  const q = (k, t) => { const f = itp.get(k); if (!f) return Q(); const a = f.evaluate(t); return new THREE.Quaternion(a[0], a[1], a[2], a[3]); };
+  const hip = t => q('hips', t), up2 = !!bn('上半身2');
+  const defs = [
+    { n: '下半身', f: hip },
+    { n: '上半身', f: t => { const r = hip(t).multiply(q('spine', t)); return up2 ? r : r.multiply(q('chest', t)).multiply(q('upperChest', t)); } },
+    { n: '上半身2', f: t => q('chest', t).multiply(q('upperChest', t)) },
+    { n: '首', f: t => q('neck', t) }, { n: '頭', f: t => q('head', t) },
+  ];
+  for (const [s, v, sg] of [['左', 'left', 1], ['右', 'right', -1]]) {
+    const A = new THREE.Vector3(sg, 0, 0), D = new THREE.Vector3(0, -1, 0);
+    const cs = corr(s + '肩', s + '腕', A), cu = corr(s + '腕', s + 'ひじ', A), cl = corr(s + 'ひじ', s + '手首', A);
+    const gu = corr(s + '足', s + 'ひざ', D), gl = corr(s + 'ひざ', s + '足首', D);
+    defs.push(
+      { n: s + '肩', f: t => q(v + 'Shoulder', t), c: cs }, { n: s + '腕', f: t => q(v + 'UpperArm', t), c: cu, cp: cs },
+      { n: s + 'ひじ', f: t => q(v + 'LowerArm', t), c: cl, cp: cu }, { n: s + '手首', f: t => q(v + 'Hand', t), c: cl, cp: cl },
+      { n: s + '足', f: t => q(v + 'UpperLeg', t), c: gu }, { n: s + 'ひざ', f: t => q(v + 'LowerLeg', t), c: gl, cp: gu },
+      { n: s + '足首', f: t => q(v + 'Foot', t), cp: gl });
+  }
+  const dur = Math.max(anim.duration, 1 / 30), N = Math.ceil(dur * 30 - 1e-3) + 1, times = new Float32Array(N).map((_, i) => Math.min(i / 30, dur));
+  const tracks = [];
+  for (const d of defs) {
+    if (!bn(d.n)) continue;
+    const c = d.c || Q(), cpi = (d.cp || Q()).clone().invert(), vals = new Float32Array(N * 4), prev = Q();
+    for (let i = 0; i < N; i++) {
+      const r = cpi.clone().multiply(d.f(times[i])).multiply(c);
+      if (i && r.dot(prev) < 0) { r.x = -r.x; r.y = -r.y; r.z = -r.z; r.w = -r.w; }      // 補間が逆回りしないよう向きをそろえる
+      prev.copy(r); r.toArray(vals, i * 4);
+    }
+    tracks.push(new THREE.QuaternionKeyframeTrack('.bones[' + d.n + '].quaternion', times, vals));
+  }
+  const th = anim.humanoidTracks.translation.get('hips'), cen = bn('センター'), hb = bn('下半身') || cen;
+  if (th && cen && hb) {                                 // 腰の移動 → センター。体の大きさの比で拡縮
+    const f = th.createInterpolant(), r0 = anim.restHipsPosition, sc = rest(hb).y * MMD_SCALE / (r0?.y || 1) / MMD_SCALE, vals = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const a = f.evaluate(times[i]);
+      vals[i * 3] = cen.position.x + (a[0] - (r0?.x || 0)) * sc; vals[i * 3 + 1] = cen.position.y + (a[1] - (r0?.y || 0)) * sc; vals[i * 3 + 2] = cen.position.z + (a[2] - (r0?.z || 0)) * sc;
+    }
+    tracks.push(new THREE.VectorKeyframeTrack('.bones[センター].position', times, vals));
+  }
+  return new THREE.AnimationClip('vrma', dur, groundFixMMD(tracks, mesh, times, false));
+}
+
+function vmdToVRM(vmd,v){
+  const hu=v.humanoid, node=n=>hu.getNormalizedBoneNode(n), flip=v.meta?.metaVersion==='0';
+  const grp=(arr,k)=>{const m=new Map();for(const x of arr||[]){const n=x[k];(m.get(n)||m.set(n,[]).get(n)).push(x);}m.forEach(a=>a.sort((p,q)=>p.frameNum-q.frameNum));return m;};
+  const bones=grp(vmd.motions,'boneName'), morphs=grp(vmd.morphs,'morphName');
+  const sampler=(map,name,pos)=>{const a=map.get(name);let i=0;const A=new THREE.Quaternion(),B=new THREE.Quaternion();
+    return fr=>{if(!a)return pos?new THREE.Vector3():new THREE.Quaternion();
+      while(i<a.length-1&&a[i+1].frameNum<=fr)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(fr-k0.frameNum)/(k1.frameNum-k0.frameNum)));
+      if(pos)return new THREE.Vector3().fromArray(k0.position).lerp(new THREE.Vector3().fromArray(k1.position),t);
+      return new THREE.Quaternion().copy(A.fromArray(k0.rotation)).slerp(B.fromArray(k1.rotation),t);};};
+  const S=n=>sampler(bones,n,false), P=n=>sampler(bones,n,true);
+  const hip=S('下半身'), hip2=S('下半身'), up=S('上半身');
+  const defs=[['hips',hip],['spine',f=>hip2(f).invert().multiply(up(f))],['chest',S('上半身2')],['neck',S('首')],['head',S('頭')]];
+  const th=35*Math.PI/180, ikSides=[];
+  for(const [s,w,sg] of [['左','left',1],['右','right',-1]]){
+    const R=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(sg*Math.cos(th),-Math.sin(th),0),new THREE.Vector3(sg,0,0)), Ri=R.clone().invert();
+    const arm=n=>{const g=S(s+n);return f=>g(f).multiply(Ri);}, lim=n=>{const g=S(s+n);return f=>R.clone().multiply(g(f)).multiply(Ri);};
+    defs.push([w+'Shoulder',S(s+'肩')],[w+'UpperArm',arm('腕')],[w+'LowerArm',lim('ひじ')],[w+'Hand',lim('手首')]);
+    const ikn=[s+'足ＩＫ',s+'足IK'].find(n=>bones.has(n));   // 足IKがあればIKで解く。なければFK
+    if(ikn)ikSides.push([w,ikn]);else defs.push([w+'UpperLeg',S(s+'足')],[w+'LowerLeg',S(s+'ひざ')],[w+'Foot',S(s+'足首')]);
+  }
+  let last=0;for(const m of vmd.motions)last=Math.max(last,m.frameNum);for(const m of vmd.morphs||[])last=Math.max(last,m.frameNum);
+  const N=last+1,times=Float32Array.from({length:N},(_,i)=>i/30),tracks=[];
+  for(const [name,f] of defs){
+    const nd=node(name);if(!nd)continue;const vals=new Float32Array(N*4),prev=new THREE.Quaternion();
+    for(let i=0;i<N;i++){const r=f(i);if(flip){r.x=-r.x;r.z=-r.z;}
+      if(i&&r.dot(prev)<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev.copy(r);r.toArray(vals,i*4);}
+    tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,vals));
+  }
+  const hn=node('hips'),r0=hn?hn.position.clone():null,k=hn?MMD_SCALE*(r0.y/0.92):0;   // 腰の移動：MMD単位→m、体の大きさの比で拡縮
+  let hp=null,hq=null,lift=0;
+  if(hn){
+    const sx0=flip?-1:1,cS=P('センター'),gS=P('グルーブ'),hS=S('下半身');hp=[];hq=[];
+    for(let i=0;i<N;i++){const a=cS(i),b=gS(i);hp.push(new THREE.Vector3(r0.x+sx0*(a.x+b.x)*k,r0.y+(a.y+b.y)*k,r0.z+sx0*(a.z+b.z)*k));
+      const q=hS(i);if(flip){q.x=-q.x;q.z=-q.z;}hq.push(q);}
+    // 接地補正（lanternのMMDと同じ考え方）：モデルの脚の長さがモーションの想定と違うと、座ったときに腰が床下へ入る。股関節が床から一定の高さを保つよう、腰を持ち上げる
+    const legU=ikSides.map(([w])=>node(w+'UpperLeg')).filter(Boolean),gk=gv('mgr',1);
+    if(legU.length&&gk>0){
+      const rad=gv('mhip',8)/100*(r0.y+legU[0].position.y)*gk,dy=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
+      for(let i=0;i<N;i++){let need=0;for(const u of legU)need=Math.max(need,rad-(hp[i].y+u.position.clone().applyQuaternion(hq[i]).y));dy[i]=need;}
+      for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dy[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必ず必要量以上になる）
+      for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
+      for(let i=1;i<N;i++){const lim=0.5*Math.max(0,hp[i].y-hp[i-1].y)+0.03*k;sm[i]=Math.max(sm[i],sm[i-1]-lim);}   // 持ち上げ量は、腰が上がるとき以外は急に戻さない
+      for(let i=0;i<N;i++){hp[i].y+=sm[i];lift=Math.max(lift,sm[i]);}
+      if(lift>1e-4)groundNote('接地補正（VRM）：最大 '+(lift*100).toFixed(1)+'cm 持ち上げ');
+    }
+  }
+  if(hn&&(bones.has('センター')||bones.has('グルーブ')||lift>1e-4)){
+    const vals=new Float32Array(N*3);for(let i=0;i<N;i++)hp[i].toArray(vals,i*3);
+    tracks.push(new THREE.VectorKeyframeTrack(hn.name+'.position',times,vals));
+  }
+  if(hn&&ikSides.length){   // 足IK → 2ボーンIK（足IKの位置は全ての親基準＝モデル空間。センター移動・下半身回転を含む腰の位置から解く）
+    const V=(x,y,z)=>new THREE.Vector3(x,y,z),Qn=()=>new THREE.Quaternion(),sx=flip?-1:1,fw=V(0,0,flip?-1:1);
+    const sides=ikSides.map(([w,ikn])=>{   // 足IKの目標位置（モデル空間）を全フレーム分そろえる
+      const nU=node(w+'UpperLeg'),nL=node(w+'LowerLeg'),nF=node(w+'Foot');if(!nU||!nL||!nF)return null;
+      const uL=nU.position.clone(),lL=nL.position.clone(),fL=nF.position.clone(),rest=r0.clone().add(uL).add(lL).add(fL),iP=P(ikn),tg=[];
+      for(let i=0;i<N;i++){const p=iP(i);tg.push(rest.clone().add(V(sx*p.x,p.y,sx*p.z).multiplyScalar(k)));}
+      return {ikn,nU,nL,nF,uL,lL,fL,rest,tg};
+    }).filter(Boolean);
+    // 足の交差防止（lanternのMMDと同じ考え方）：左右の足IKの間隔（左右の股関節を結ぶ向きで測る）が立ち姿の ks 倍より狭い／入れ替わるフレームだけ、左右へ押し広げる
+    const ks=gv('mxg',0.4);
+    if(sides.length===2&&ks>0){
+      const [A,B]=sides,axAt=i=>A.uL.clone().applyQuaternion(hq[i]).sub(B.uL.clone().applyQuaternion(hq[i])).normalize();
+      const gap0=A.rest.clone().sub(B.rest).dot(A.uL.clone().sub(B.uL).normalize()),minGap=gap0*ks;
+      if(gap0>1e-6){
+        const dfc=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
+        for(let i=0;i<N;i++)dfc[i]=Math.max(0,minGap-A.tg[i].clone().sub(B.tg[i]).dot(axAt(i)));
+        for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dfc[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必要量以上になる）
+        for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
+        let top=0;
+        for(let i=0;i<N;i++)if(sm[i]>1e-6){const ax=axAt(i);A.tg[i].addScaledVector(ax,sm[i]/2);B.tg[i].addScaledVector(ax,-sm[i]/2);top=Math.max(top,sm[i]);}
+        if(top>1e-4&&typeof st==='function')st('足の交差防止（VRM）：最大 '+(top*100).toFixed(1)+'cm 押し広げ');
+      }
+    }
+    for(const {ikn,nU,nL,nF,uL,lL,fL,tg} of sides){
+      const l1=lL.length(),l2=fL.length(),d1=lL.clone().normalize(),d2=fL.clone().normalize(),iR=S(ikn);
+      const arr=[new Float32Array(N*4),new Float32Array(N*4),new Float32Array(N*4)],prev=[Qn(),Qn(),Qn()];
+      for(let i=0;i<N;i++){
+        const H=hq[i],Uw=uL.clone().applyQuaternion(H).add(hp[i]);
+        const v=tg[i].clone().sub(Uw);
+        const d=Math.min(Math.max(v.length(),Math.abs(l1-l2)*1.0001+1e-4),(l1+l2)*0.9999),vh=v.normalize();
+        const a=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-a*a));
+        const pole=fw.clone().applyQuaternion(H);pole.addScaledVector(vh,-pole.dot(vh));if(pole.lengthSq()<1e-8)pole.set(0,0,fw.z);pole.normalize();   // ひざは体の前方へ曲げる
+        const Kw=Uw.clone().addScaledVector(vh,a).addScaledVector(pole,h),Aw=Uw.clone().addScaledVector(vh,d);
+        const Qu=Qn().setFromUnitVectors(d1.clone().applyQuaternion(H),Kw.clone().sub(Uw).normalize()).multiply(H);   // 親(腰)の回転から最小の振りで合わせる
+        const Ql=Qn().setFromUnitVectors(d2.clone().applyQuaternion(Qu),Aw.clone().sub(Kw).normalize()).multiply(Qu);
+        const ir=iR(i);if(flip){ir.x=-ir.x;ir.z=-ir.z;}
+        const loc=[H.clone().invert().multiply(Qu),Qu.clone().invert().multiply(Ql),Ql.clone().invert().multiply(ir)];
+        for(let j=0;j<3;j++){const r=loc[j];if(i&&r.dot(prev[j])<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev[j].copy(r);r.toArray(arr[j],i*4);}
+      }
+      [nU,nL,nF].forEach((nd,j)=>tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,arr[j])));
+    }
+  }
+  const em=v.expressionManager,mm={'まばたき':'blink','あ':'aa','い':'ih','う':'ou','え':'ee','お':'oh','にこり':'happy','笑い':'happy','怒り':'angry','悲しい':'sad','驚き':'surprised'},done=new Set();
+  if(em)for(const [jn,en] of Object.entries(mm)){
+    const a=morphs.get(jn);if(!a||done.has(en)||!em.getExpression(en))continue;done.add(en);
+    const vals=new Float32Array(N);let i=0;
+    for(let f=0;f<N;f++){while(i<a.length-1&&a[i+1].frameNum<=f)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(f-k0.frameNum)/(k1.frameNum-k0.frameNum)));vals[f]=k0.weight+(k1.weight-k0.weight)*t;}
+    tracks.push(new THREE.NumberKeyframeTrack(em.getExpressionTrackName(en),times,vals));
+  }
+  return new THREE.AnimationClip('vmd',(N-1)/30,tracks);
+}
+// ==== /shared/common.js ====
 addEventListener('error', e => st('エラー: ' + e.message));
 addEventListener('unhandledrejection', e => st('エラー: ' + (e.reason?.message || e.reason)));
 async function loadMMD(files) {
@@ -1254,11 +1657,7 @@ async function loadMMD(files) {
   finally { setTimeout(() => map.forEach(u => URL.revokeObjectURL(u)), 30000); }   // テクスチャの読み込み完了を待ってから解放
 }
 const sjis = new TextDecoder('shift_jis'), utf8 = new TextDecoder('utf-8', { fatal: true });
-function zipName(n) {                                    // 旧Windows製zipは名前が Shift_JIS のことがある → 文字化けを直す
-  if (!/[\x80-\xff]/.test(n) || /[^\x00-\xff]/.test(n)) return n;
-  const b = Uint8Array.from(n, c => c.charCodeAt(0));
-  try { return utf8.decode(b); } catch { return sjis.decode(b); }
-}
+
 async function unzipModel(zip) {                         // フォルダ構成は捨てて、ファイル名だけで引く
   const ent = unzipSync(new Uint8Array(await zip.arrayBuffer()));
   return Object.entries(ent).filter(([n]) => !n.endsWith('/')).map(([n, d]) => new File([d], zipName(n).split('/').pop()));
@@ -1357,90 +1756,7 @@ $('mf').addEventListener('change', async e => {         // VRM / MMD(zip・pmx+�
 // VRMA → MMDモデル：ヒューマノイドの回転を、MMDの骨に写し替える（IKは使わず、全部FKで）。
 // MMDの骨は初期回転が全部「無し」なので、VRMの正規化ボーンと同じ座標で扱える。モデルの初期ポーズがAポーズなど
 // T字から外れている分は、腕・脚の骨ごとに補正する： 局所回転 = 親の補正⁻¹ × VRMAの回転 × 自分の補正
-function vrmaToMMD(anim, mesh) {
-  mesh.pose();
-  const bn = n => mesh.skeleton.getBoneByName(n);
-  const rest = b => { const v = new THREE.Vector3(); for (let x = b; x?.isBone; x = x.parent) v.add(x.position); return v; };   // 初期ポーズでの位置（MMD単位）
-  const Q = () => new THREE.Quaternion();
-  const corr = (a, b, T) => bn(a) && bn(b) ? Q().setFromUnitVectors(rest(bn(b)).sub(rest(bn(a))).normalize(), T) : Q();
-  const rot = anim.humanoidTracks.rotation, itp = new Map([...rot].map(([k, t]) => [k, t.createInterpolant()]));
-  const q = (k, t) => { const f = itp.get(k); if (!f) return Q(); const a = f.evaluate(t); return new THREE.Quaternion(a[0], a[1], a[2], a[3]); };
-  const hip = t => q('hips', t), up2 = !!bn('上半身2');
-  const defs = [
-    { n: '下半身', f: hip },
-    { n: '上半身', f: t => { const r = hip(t).multiply(q('spine', t)); return up2 ? r : r.multiply(q('chest', t)).multiply(q('upperChest', t)); } },
-    { n: '上半身2', f: t => q('chest', t).multiply(q('upperChest', t)) },
-    { n: '首', f: t => q('neck', t) }, { n: '頭', f: t => q('head', t) },
-  ];
-  for (const [s, v, sg] of [['左', 'left', 1], ['右', 'right', -1]]) {
-    const A = new THREE.Vector3(sg, 0, 0), D = new THREE.Vector3(0, -1, 0);
-    const cs = corr(s + '肩', s + '腕', A), cu = corr(s + '腕', s + 'ひじ', A), cl = corr(s + 'ひじ', s + '手首', A);
-    const gu = corr(s + '足', s + 'ひざ', D), gl = corr(s + 'ひざ', s + '足首', D);
-    defs.push(
-      { n: s + '肩', f: t => q(v + 'Shoulder', t), c: cs }, { n: s + '腕', f: t => q(v + 'UpperArm', t), c: cu, cp: cs },
-      { n: s + 'ひじ', f: t => q(v + 'LowerArm', t), c: cl, cp: cu }, { n: s + '手首', f: t => q(v + 'Hand', t), c: cl, cp: cl },
-      { n: s + '足', f: t => q(v + 'UpperLeg', t), c: gu }, { n: s + 'ひざ', f: t => q(v + 'LowerLeg', t), c: gl, cp: gu },
-      { n: s + '足首', f: t => q(v + 'Foot', t), cp: gl });
-  }
-  const dur = Math.max(anim.duration, 1 / 30), N = Math.ceil(dur * 30 - 1e-3) + 1, times = new Float32Array(N).map((_, i) => Math.min(i / 30, dur));
-  const tracks = [];
-  for (const d of defs) {
-    if (!bn(d.n)) continue;
-    const c = d.c || Q(), cpi = (d.cp || Q()).clone().invert(), vals = new Float32Array(N * 4), prev = Q();
-    for (let i = 0; i < N; i++) {
-      const r = cpi.clone().multiply(d.f(times[i])).multiply(c);
-      if (i && r.dot(prev) < 0) { r.x = -r.x; r.y = -r.y; r.z = -r.z; r.w = -r.w; }      // 補間が逆回りしないよう向きをそろえる
-      prev.copy(r); r.toArray(vals, i * 4);
-    }
-    tracks.push(new THREE.QuaternionKeyframeTrack('.bones[' + d.n + '].quaternion', times, vals));
-  }
-  const th = anim.humanoidTracks.translation.get('hips'), cen = bn('センター'), hb = bn('下半身') || cen;
-  if (th && cen && hb) {                                 // 腰の移動 → センター。体の大きさの比で拡縮
-    const f = th.createInterpolant(), r0 = anim.restHipsPosition, sc = rest(hb).y * MMD_SCALE / (r0?.y || 1) / MMD_SCALE, vals = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const a = f.evaluate(times[i]);
-      vals[i * 3] = cen.position.x + (a[0] - (r0?.x || 0)) * sc; vals[i * 3 + 1] = cen.position.y + (a[1] - (r0?.y || 0)) * sc; vals[i * 3 + 2] = cen.position.z + (a[2] - (r0?.z || 0)) * sc;
-    }
-    tracks.push(new THREE.VectorKeyframeTrack('.bones[センター].position', times, vals));
-  }
-  // 接地補正：座り込みなどで脚（股関節・ひざ・足首）が床面より下に沈む分だけ、センターを持ち上げる（持ち上げるだけ。立ち・歩き・ジャンプには効かない）
-  const gk = val('mgr');
-  if (gk > 0 && cen) try {
-    mesh.updateMatrixWorld(true);
-    const tv = new THREE.Vector3(), wy = b => { b.getWorldPosition(tv); mesh.worldToLocal(tv); return tv.y; };
-    const floor = mesh.geometry.boundingBox?.min.y ?? 0;           // 読み込み時に床へ合わせた、モデルの最下点
-    const legs = [];
-    for (const s of ['左', '右']) { const h = bn(s + '足'), kn = bn(s + 'ひざ'), an = bn(s + '足首'); if (h && kn && an) legs.push([h, kn, an]); }
-    if (legs.length) {
-      const Lh = wy(legs[0][0]) - floor, ya = wy(legs[0][2]) - floor;     // 股関節の高さ／足首の高さ（立ち姿）
-      const rad = [0.08 * Lh * gk, 0.05 * Lh * gk, Math.min(ya, 0.04 * Lh) * gk];   // 太もも・ひざ・足首の床からの最低高さ
-      const ct = tracks.find(t => t.name === '.bones[センター].position');
-      const bind = tracks.map(t => { const m = /^\.bones\[(.+)\]\.(quaternion|position)$/.exec(t.name); return m && bn(m[1]) ? { b: bn(m[1]), p: m[2] === 'position', f: t.createInterpolant() } : null; }).filter(Boolean);
-      if (!ct) bind.push({ b: cen, p: true, f: { evaluate: () => [cen.position.x, cen.position.y, cen.position.z] } });
-      const dy = new Float32Array(N);
-      for (let i = 0; i < N; i++) {
-        for (const x of bind) { const a = x.f.evaluate(times[i]); if (x.p) x.b.position.set(a[0], a[1], a[2]); else x.b.quaternion.set(a[0], a[1], a[2], a[3]); }
-        mesh.updateMatrixWorld(true);
-        let need = 0;
-        for (const l of legs) for (let j = 0; j < 3; j++) need = Math.max(need, rad[j] - (wy(l[j]) - floor));
-        dy[i] = need;
-      }
-      mesh.pose();
-      const mx = new Float32Array(N), sm = new Float32Array(N);       // 前後2フレームで最大を取ってから平均（急にカクつかず、必ず必要量以上になる）
-      for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) m = Math.max(m, dy[j]); mx[i] = m; }
-      for (let i = 0; i < N; i++) { let t = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) { t += mx[j]; c++; } sm[i] = t / c; }
-      limitDecay(sm, i => ct ? ct.values[i * 3 + 1] : 0);
-      const top = Math.max(...sm);
-      if (top > 1e-4) {
-        let tr = ct;
-        if (!tr) { const v = new Float32Array(N * 3); for (let i = 0; i < N; i++) v.set([cen.position.x, cen.position.y, cen.position.z], i * 3); tr = new THREE.VectorKeyframeTrack('.bones[センター].position', times, v); tracks.push(tr); }
-        for (let i = 0; i < N; i++) tr.values[i * 3 + 1] += sm[i];
-        st('接地補正：最大 ' + (top * MMD_SCALE * 100).toFixed(1) + 'cm 持ち上げ');
-      }
-    }
-  } catch (e) { console.warn('接地補正', e); } finally { mesh.pose(); }
-  return new THREE.AnimationClip('vrma', dur, tracks);
-}
+
 let ammoP = null, ammoDead = false;                                        // ammo.js（MMDの物理）は、使うときに初めて読み込む
 function loadAmmo() {
   return ammoP ??= new Promise((ok, ng) => {
@@ -1452,13 +1768,7 @@ function loadAmmo() {
   }).catch(e => { ammoP = null; throw e; });
 }
 // 補正量が、元のセンターの上昇量の半分（＋わずか）より速く減らないようにする。起き上がりの途中で上昇が止まったり沈んだりするのを防ぐ
-function limitDecay(sm, rawY) {
-  let prev = rawY(0);
-  for (let i = 1; i < sm.length; i++) {
-    const y = rawY(i), lim = 0.5 * Math.max(0, y - prev) + 0.03;
-    sm[i] = Math.max(sm[i], sm[i - 1] - lim); prev = y;
-  }
-}
+
 
 // ---- VMDのIKオン/オフ指定（three.js の読み込みは無視するので、ここで読む） ----
 function parseVmdIk(buf) {
@@ -1811,107 +2121,7 @@ async function playMMD(i, cont) {
 }
 
 // ---- 新規：VMD→VRM（腕・上半身はFK、脚は足IKを2ボーンIKで近似。MMDの標準的なAポーズ約35度を仮定して腕を補正）----
-function vmdToVRM(vmd,v){
-  const hu=v.humanoid, node=n=>hu.getNormalizedBoneNode(n), flip=v.meta?.metaVersion==='0';
-  const grp=(arr,k)=>{const m=new Map();for(const x of arr||[]){const n=x[k];(m.get(n)||m.set(n,[]).get(n)).push(x);}m.forEach(a=>a.sort((p,q)=>p.frameNum-q.frameNum));return m;};
-  const bones=grp(vmd.motions,'boneName'), morphs=grp(vmd.morphs,'morphName');
-  const sampler=(map,name,pos)=>{const a=map.get(name);let i=0;const A=new THREE.Quaternion(),B=new THREE.Quaternion();
-    return fr=>{if(!a)return pos?new THREE.Vector3():new THREE.Quaternion();
-      while(i<a.length-1&&a[i+1].frameNum<=fr)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(fr-k0.frameNum)/(k1.frameNum-k0.frameNum)));
-      if(pos)return new THREE.Vector3().fromArray(k0.position).lerp(new THREE.Vector3().fromArray(k1.position),t);
-      return new THREE.Quaternion().copy(A.fromArray(k0.rotation)).slerp(B.fromArray(k1.rotation),t);};};
-  const S=n=>sampler(bones,n,false), P=n=>sampler(bones,n,true);
-  const hip=S('下半身'), hip2=S('下半身'), up=S('上半身');
-  const defs=[['hips',hip],['spine',f=>hip2(f).invert().multiply(up(f))],['chest',S('上半身2')],['neck',S('首')],['head',S('頭')]];
-  const th=35*Math.PI/180, ikSides=[];
-  for(const [s,w,sg] of [['左','left',1],['右','right',-1]]){
-    const R=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(sg*Math.cos(th),-Math.sin(th),0),new THREE.Vector3(sg,0,0)), Ri=R.clone().invert();
-    const arm=n=>{const g=S(s+n);return f=>g(f).multiply(Ri);}, lim=n=>{const g=S(s+n);return f=>R.clone().multiply(g(f)).multiply(Ri);};
-    defs.push([w+'Shoulder',S(s+'肩')],[w+'UpperArm',arm('腕')],[w+'LowerArm',lim('ひじ')],[w+'Hand',lim('手首')]);
-    const ikn=[s+'足ＩＫ',s+'足IK'].find(n=>bones.has(n));   // 足IKがあればIKで解く。なければFK
-    if(ikn)ikSides.push([w,ikn]);else defs.push([w+'UpperLeg',S(s+'足')],[w+'LowerLeg',S(s+'ひざ')],[w+'Foot',S(s+'足首')]);
-  }
-  let last=0;for(const m of vmd.motions)last=Math.max(last,m.frameNum);for(const m of vmd.morphs||[])last=Math.max(last,m.frameNum);
-  const N=last+1,times=Float32Array.from({length:N},(_,i)=>i/30),tracks=[];
-  for(const [name,f] of defs){
-    const nd=node(name);if(!nd)continue;const vals=new Float32Array(N*4),prev=new THREE.Quaternion();
-    for(let i=0;i<N;i++){const r=f(i);if(flip){r.x=-r.x;r.z=-r.z;}
-      if(i&&r.dot(prev)<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev.copy(r);r.toArray(vals,i*4);}
-    tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,vals));
-  }
-  const hn=node('hips'),r0=hn?hn.position.clone():null,k=hn?MMD_SCALE*(r0.y/0.92):0;   // 腰の移動：MMD単位→m、体の大きさの比で拡縮
-  let hp=null,hq=null,lift=0;
-  if(hn){
-    const sx0=flip?-1:1,cS=P('センター'),gS=P('グルーブ'),hS=S('下半身');hp=[];hq=[];
-    for(let i=0;i<N;i++){const a=cS(i),b=gS(i);hp.push(new THREE.Vector3(r0.x+sx0*(a.x+b.x)*k,r0.y+(a.y+b.y)*k,r0.z+sx0*(a.z+b.z)*k));
-      const q=hS(i);if(flip){q.x=-q.x;q.z=-q.z;}hq.push(q);}
-    // 接地補正（lanternのMMDと同じ考え方）：モデルの脚の長さがモーションの想定と違うと、座ったときに腰が床下へ入る。股関節が床から一定の高さを保つよう、腰を持ち上げる
-    const legU=ikSides.map(([w])=>node(w+'UpperLeg')).filter(Boolean),gk=typeof val==='function'?val('mgr'):1;
-    if(legU.length&&gk>0){
-      const rad=0.08*(r0.y+legU[0].position.y)*gk,dy=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
-      for(let i=0;i<N;i++){let need=0;for(const u of legU)need=Math.max(need,rad-(hp[i].y+u.position.clone().applyQuaternion(hq[i]).y));dy[i]=need;}
-      for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dy[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必ず必要量以上になる）
-      for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
-      for(let i=1;i<N;i++){const lim=0.5*Math.max(0,hp[i].y-hp[i-1].y)+0.03*k;sm[i]=Math.max(sm[i],sm[i-1]-lim);}   // 持ち上げ量は、腰が上がるとき以外は急に戻さない
-      for(let i=0;i<N;i++){hp[i].y+=sm[i];lift=Math.max(lift,sm[i]);}
-      if(lift>1e-4&&typeof st==='function')st('接地補正（VRM）：最大 '+(lift*100).toFixed(1)+'cm 持ち上げ');
-    }
-  }
-  if(hn&&(bones.has('センター')||bones.has('グルーブ')||lift>1e-4)){
-    const vals=new Float32Array(N*3);for(let i=0;i<N;i++)hp[i].toArray(vals,i*3);
-    tracks.push(new THREE.VectorKeyframeTrack(hn.name+'.position',times,vals));
-  }
-  if(hn&&ikSides.length){   // 足IK → 2ボーンIK（足IKの位置は全ての親基準＝モデル空間。センター移動・下半身回転を含む腰の位置から解く）
-    const V=(x,y,z)=>new THREE.Vector3(x,y,z),Qn=()=>new THREE.Quaternion(),sx=flip?-1:1,fw=V(0,0,flip?-1:1);
-    const sides=ikSides.map(([w,ikn])=>{   // 足IKの目標位置（モデル空間）を全フレーム分そろえる
-      const nU=node(w+'UpperLeg'),nL=node(w+'LowerLeg'),nF=node(w+'Foot');if(!nU||!nL||!nF)return null;
-      const uL=nU.position.clone(),lL=nL.position.clone(),fL=nF.position.clone(),rest=r0.clone().add(uL).add(lL).add(fL),iP=P(ikn),tg=[];
-      for(let i=0;i<N;i++){const p=iP(i);tg.push(rest.clone().add(V(sx*p.x,p.y,sx*p.z).multiplyScalar(k)));}
-      return {ikn,nU,nL,nF,uL,lL,fL,rest,tg};
-    }).filter(Boolean);
-    // 足の交差防止（lanternのMMDと同じ考え方）：左右の足IKの間隔（左右の股関節を結ぶ向きで測る）が立ち姿の ks 倍より狭い／入れ替わるフレームだけ、左右へ押し広げる
-    const ks=typeof val==='function'?val('mxg'):0.4;
-    if(sides.length===2&&ks>0){
-      const [A,B]=sides,axAt=i=>A.uL.clone().applyQuaternion(hq[i]).sub(B.uL.clone().applyQuaternion(hq[i])).normalize();
-      const gap0=A.rest.clone().sub(B.rest).dot(A.uL.clone().sub(B.uL).normalize()),minGap=gap0*ks;
-      if(gap0>1e-6){
-        const dfc=new Float32Array(N),mx=new Float32Array(N),sm=new Float32Array(N);
-        for(let i=0;i<N;i++)dfc[i]=Math.max(0,minGap-A.tg[i].clone().sub(B.tg[i]).dot(axAt(i)));
-        for(let i=0;i<N;i++){let m=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++)m=Math.max(m,dfc[j]);mx[i]=m;}   // 前後2フレームで最大を取ってから平均（必要量以上になる）
-        for(let i=0;i<N;i++){let t=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){t+=mx[j];c++;}sm[i]=t/c;}
-        let top=0;
-        for(let i=0;i<N;i++)if(sm[i]>1e-6){const ax=axAt(i);A.tg[i].addScaledVector(ax,sm[i]/2);B.tg[i].addScaledVector(ax,-sm[i]/2);top=Math.max(top,sm[i]);}
-        if(top>1e-4&&typeof st==='function')st('足の交差防止（VRM）：最大 '+(top*100).toFixed(1)+'cm 押し広げ');
-      }
-    }
-    for(const {ikn,nU,nL,nF,uL,lL,fL,tg} of sides){
-      const l1=lL.length(),l2=fL.length(),d1=lL.clone().normalize(),d2=fL.clone().normalize(),iR=S(ikn);
-      const arr=[new Float32Array(N*4),new Float32Array(N*4),new Float32Array(N*4)],prev=[Qn(),Qn(),Qn()];
-      for(let i=0;i<N;i++){
-        const H=hq[i],Uw=uL.clone().applyQuaternion(H).add(hp[i]);
-        const v=tg[i].clone().sub(Uw);
-        const d=Math.min(Math.max(v.length(),Math.abs(l1-l2)*1.0001+1e-4),(l1+l2)*0.9999),vh=v.normalize();
-        const a=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-a*a));
-        const pole=fw.clone().applyQuaternion(H);pole.addScaledVector(vh,-pole.dot(vh));if(pole.lengthSq()<1e-8)pole.set(0,0,fw.z);pole.normalize();   // ひざは体の前方へ曲げる
-        const Kw=Uw.clone().addScaledVector(vh,a).addScaledVector(pole,h),Aw=Uw.clone().addScaledVector(vh,d);
-        const Qu=Qn().setFromUnitVectors(d1.clone().applyQuaternion(H),Kw.clone().sub(Uw).normalize()).multiply(H);   // 親(腰)の回転から最小の振りで合わせる
-        const Ql=Qn().setFromUnitVectors(d2.clone().applyQuaternion(Qu),Aw.clone().sub(Kw).normalize()).multiply(Qu);
-        const ir=iR(i);if(flip){ir.x=-ir.x;ir.z=-ir.z;}
-        const loc=[H.clone().invert().multiply(Qu),Qu.clone().invert().multiply(Ql),Ql.clone().invert().multiply(ir)];
-        for(let j=0;j<3;j++){const r=loc[j];if(i&&r.dot(prev[j])<0){r.x=-r.x;r.y=-r.y;r.z=-r.z;r.w=-r.w;}prev[j].copy(r);r.toArray(arr[j],i*4);}
-      }
-      [nU,nL,nF].forEach((nd,j)=>tracks.push(new THREE.QuaternionKeyframeTrack(nd.name+'.quaternion',times,arr[j])));
-    }
-  }
-  const em=v.expressionManager,mm={'まばたき':'blink','あ':'aa','い':'ih','う':'ou','え':'ee','お':'oh','にこり':'happy','笑い':'happy','怒り':'angry','悲しい':'sad','驚き':'surprised'},done=new Set();
-  if(em)for(const [jn,en] of Object.entries(mm)){
-    const a=morphs.get(jn);if(!a||done.has(en)||!em.getExpression(en))continue;done.add(en);
-    const vals=new Float32Array(N);let i=0;
-    for(let f=0;f<N;f++){while(i<a.length-1&&a[i+1].frameNum<=f)i++;const k0=a[i],k1=a[Math.min(i+1,a.length-1)],t=k1===k0?0:Math.min(1,Math.max(0,(f-k0.frameNum)/(k1.frameNum-k0.frameNum)));vals[f]=k0.weight+(k1.weight-k0.weight)*t;}
-    tracks.push(new THREE.NumberKeyframeTrack(em.getExpressionTrackName(en),times,vals));
-  }
-  return new THREE.AnimationClip('vmd',(N-1)/30,tracks);
-}
+
 // ---- VRMでVMDを再生：変換（vmdToVRM）と、指のキーがない指の軽い曲げ（relax と同じ握り・個体差）。親指は触らない ----
 const FJ = [['Index', .7], ['Middle', 1], ['Ring', 1.1], ['Little', 1.2]], FJJ = [['Proximal', .35], ['Intermediate', .5], ['Distal', .3]];
 let vmdCurl = null; const vmdClips = new WeakMap();      // vmdCurl: 曲げる指の骨の一覧／vmdClips: VRMごとの変換済みクリップ（VMDファイル→クリップ）
@@ -1937,26 +2147,7 @@ function stopMotion() {
 }
 const mrec = [];                                       // モーション番号 → { file, audio }（保存用）
 // 2023年ごろの旧VRMAは specVersion が無く、three-vrm-animation が読み込みを打ち切る → "1.0-draft" を補ってから解析する
-function fixVrmaSpec(buf) {
-  try {
-    const dv = new DataView(buf);
-    if (dv.getUint32(0, true) !== 0x46546C67 || dv.getUint32(16, true) !== 0x4E4F534A) return buf;   // 'glTF' と先頭 JSON チャンクを確認
-    const jl = dv.getUint32(12, true);
-    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl)));
-    const ex = json.extensions?.VRMC_vrm_animation;
-    if (!ex || ex.specVersion) return buf;
-    ex.specVersion = '1.0-draft';
-    let jb = new TextEncoder().encode(JSON.stringify(json));
-    const pad = (4 - jb.length % 4) % 4;
-    if (pad) { const t = new Uint8Array(jb.length + pad).fill(0x20); t.set(jb); jb = t; }
-    const rest = new Uint8Array(buf, 20 + jl);                                   // 以降のチャンク（BIN など）
-    const out = new Uint8Array(20 + jb.length + rest.length);
-    out.set(new Uint8Array(buf, 0, 20)); out.set(jb, 20); out.set(rest, 20 + jb.length);
-    const ov = new DataView(out.buffer);
-    ov.setUint32(8, out.length, true); ov.setUint32(12, jb.length, true);
-    return out.buffer;
-  } catch (e) { console.warn('fixVrmaSpec', e); return buf; }
-}
+
 async function addMotion(file) {                       // 追加できたら番号、失敗なら -1
   try {
     if (/\.vmd$/i.test(file.name)) {                    // VMD：モデルごとに解析が要るので、再生時に変換する（ここでは中身を保持するだけ）
@@ -2489,7 +2680,11 @@ function pushFace(rects, vis) {                              // 母機：1番の
   if (cp.out.width !== ow || cp.out.height !== oh) { cp.out.width = ow; cp.out.height = oh; }
   cp.ctx.drawImage(renderer.domElement, r[0] * pr, (innerHeight - r[1] - r[3]) * pr, sw, sh, 0, 0, ow, oh);
 }
-$('pvb').onclick = () => { pv = !pv; $('pvb').textContent = '表示: ' + (pv ? '立体' : '平面'); };
+const pvLabel = () => $('pvb').textContent = '表示: ' + (tmode ? '透過' : pv ? '立体' : '平面');
+$('pvb').onclick = async () => {                          // 平面 → 立体 → 透過 → 平面
+  if (tmode) { tExit(); pvLabel(); return; }
+  if (pv) { pv = false; await tEnter(); } else { pv = true; pvLabel(); }
+};
 $('lay').onclick = () => { lay = (lay + 1) % 3; $('lay').textContent = '並び: ' + ['自動', '左右', '上下'][lay]; };
 
 function viewports(n) {                       // 平面：見える面の数だけ並べる（2面は左右/上下、それ以外は格子）
@@ -2700,9 +2895,10 @@ function saveParams() {
   if (!ready) return;
   const p = {};
   $('ui').querySelectorAll('input[type=range],input[type=checkbox],select').forEach(e => {
-    if (e.id && e.id !== 'ms' && e.id !== 'ml' && !e.closest('#pr')) p[e.id] = e.type === 'checkbox' ? e.checked : e.value;
+    if (e.id && e.id !== 'ms' && e.id !== 'ml' && e.id !== 'cbs' && !e.closest('#pr') && e.id !== 'oo') p[e.id] = e.type === 'checkbox' ? e.checked : e.value;
   });
   p.ptc = $('ptc').value; p.fyc = $('fyc').value; p.rmc = $('rmc').value;
+  if (tmode && tPrev) { p.bg = tPrev.bg; p.fl = tPrev.fl; }   // 透過中は、透過に入る前の背景・床を保存する
   try { localStorage.setItem(KEY, JSON.stringify({ p, lay, pv, dragMode, fm: flick, ms: val('ms'), open: Object.fromEntries([...document.querySelectorAll('#ui details')].map(d => [d.id, d.open])), props: props.map(o => ({ x: o.x, z: o.z, y: o.y, s: o.s, r: o.r, light: o.light, lc: o.lc, li: o.li, thru: o.thru, sway: o.sway, hcm: o.hcm })) })); } catch {}
 }
 ['input', 'change', 'click'].forEach(t => addEventListener(t, () => { clearTimeout(tm); tm = setTimeout(saveParams, 400); }, true));
@@ -2738,6 +2934,309 @@ async function restoreModel(parts, bad) {
   if (await isZip(m)) { if (await openMMD([m])) parts.push('MMDモデル'); await idb('readwrite', s => s.delete('model')); return; }   // zipがモデル枠に入っていた場合はMMDとして救済
   if (await loadModel(m)) { parts.push('モデル'); libAdd('vrm', [m]); }
 }
+// ---- 床の写真：斜めから撮った床の四隅を指定 → 真上から見た形に直して床の模様にする ----
+function tintGround() {                                  // 床の色味を、下から返ってくる光（地面側の環境光）にだけ混ぜる。明るさは元のまま
+  if (!photoTex || +$('fl').value !== 6 || !$('flc').checked) return;
+  const g = hemi.groundColor, L = c => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  g.lerp(photoAvg.clone().multiplyScalar(L(g) / (L(photoAvg) || 1)), 0.7);
+}
+let floorFile = null, floorSrc = null, floorPts = [];
+async function floorLoad(file) {                         // 長辺2048pxまで縮小した作業用キャンバス
+  const im = new Image(), u = URL.createObjectURL(file); im.src = u;
+  try { await im.decode(); } finally { URL.revokeObjectURL(u); }
+  const k = Math.min(1, 2048 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+  c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c;
+}
+function orderQuad(p) {                                  // 画面上の 左上→右上→右下→左下 に並べ替える
+  const cx = p.reduce((s, a) => s + a[0], 0) / 4, cy = p.reduce((s, a) => s + a[1], 0) / 4;
+  const q = p.slice().sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+  let s = 0; q.forEach((a, i) => { if (a[0] + a[1] < q[s][0] + q[s][1]) s = i; });
+  return [...q.slice(s), ...q.slice(0, s)];
+}
+function homog(q) {                                      // 単位正方形 (0,0)(1,0)(1,1)(0,1) を四点 q に写す射影変換の係数
+  const U = [[0, 0], [1, 0], [1, 1], [0, 1]], A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const [u, v] = U[i], [x, y] = q[i];
+    A.push([u, v, 1, 0, 0, 0, -u * x, -v * x]); b.push(x);
+    A.push([0, 0, 0, u, v, 1, -u * y, -v * y]); b.push(y);
+  }
+  for (let i = 0; i < 8; i++) {
+    let p = i; for (let r = i + 1; r < 8; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    [A[i], A[p]] = [A[p], A[i]]; [b[i], b[p]] = [b[p], b[i]];
+    if (Math.abs(A[i][i]) < 1e-9) return null;
+    for (let r = 0; r < 8; r++) if (r !== i) { const f = A[r][i] / A[i][i]; for (let c = i; c < 8; c++) A[r][c] -= f * A[i][c]; b[r] -= f * b[i]; }
+  }
+  return b.map((v, i) => v / A[i][i]);
+}
+function floorWarp(src, pts, N = 1024) {                 // 四隅（0〜1の比率）で囲んだ範囲を、真上から見た正方形に直す
+  const sw = src.width, sh = src.height, H = homog(orderQuad(pts).map(([x, y]) => [x * sw, y * sh])); if (!H) return null;
+  const S = src.getContext('2d').getImageData(0, 0, sw, sh).data, out = document.createElement('canvas'); out.width = out.height = N;
+  const og = out.getContext('2d'), od = og.createImageData(N, N), O = od.data, [a, b, c, d, e, f, g, h] = H;
+  for (let j = 0; j < N; j++) {
+    const v = (j + 0.5) / N;
+    for (let i = 0; i < N; i++) {
+      const u = (i + 0.5) / N, w = g * u + h * v + 1;
+      let x = (a * u + b * v + c) / w - 0.5, y = (d * u + e * v + f) / w - 0.5;
+      x = Math.min(Math.max(x, 0), sw - 1.001); y = Math.min(Math.max(y, 0), sh - 1.001);
+      const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, i00 = (y0 * sw + x0) * 4, i01 = i00 + sw * 4, o = (j * N + i) * 4;
+      for (let k = 0; k < 3; k++) O[o + k] = S[i00 + k] * (1 - fx) * (1 - fy) + S[i00 + 4 + k] * fx * (1 - fy) + S[i01 + k] * (1 - fx) * fy + S[i01 + 4 + k] * fx * fy;
+      O[o + 3] = 255;
+    }
+  }
+  og.putImageData(od, 0, 0); return out;
+}
+function avgColor(cv) {
+  const t = document.createElement('canvas'); t.width = t.height = 8; const g = t.getContext('2d'); g.drawImage(cv, 0, 0, 8, 8);
+  const d = g.getImageData(0, 0, 8, 8).data; let r = 0, gr = 0, b = 0; for (let i = 0; i < 256; i += 4) { r += d[i]; gr += d[i + 1]; b += d[i + 2]; }
+  return new THREE.Color().setRGB(r / 64 / 255, gr / 64 / 255, b / 64 / 255, THREE.SRGBColorSpace);
+}
+async function floorSet(file, pts) {                     // テクスチャを作るだけ（反映は呼び出し側で applyFloor / light）
+  const src = floorSrc && floorFile === file ? floorSrc : await floorLoad(file), cv = floorWarp(src, pts);
+  if (!cv) throw new Error('四隅の位置が重なっています');
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  photoTex?.dispose(); photoTex = t; photoAvg = avgColor(cv); floorFile = file; floorSrc = src; floorPts = pts;
+}
+// 四隅を指定する全画面ビュー
+const fp = $('fp'), fpc = $('fpc'), fpg = fpc.getContext('2d');
+let fpImg = null, fpTmp = [], fpDrag = -1, fpView = { x: 0, y: 0, s: 1, d: 1 }, fpDone = null;
+function fpLayout() {
+  const r = fpc.getBoundingClientRect(), d = devicePixelRatio || 1; fpc.width = Math.round(r.width * d); fpc.height = Math.round(r.height * d);
+  const s = Math.min(r.width / fpImg.width, r.height / fpImg.height); fpView = { s, d, x: (r.width - fpImg.width * s) / 2, y: (r.height - fpImg.height * s) / 2 }; fpDraw();
+}
+function fpDraw() {
+  const { s, x, y, d } = fpView, W = fpImg.width * s, H = fpImg.height * s; fpg.setTransform(d, 0, 0, d, 0, 0); fpg.clearRect(0, 0, fpc.width, fpc.height);
+  fpg.drawImage(fpImg, x, y, W, H);
+  const P = fpTmp.map(([a, b]) => [x + a * W, y + b * H]);
+  if (P.length > 1) {
+    const Q = P.length === 4 ? orderQuad(P) : P; fpg.beginPath(); Q.forEach((p, i) => i ? fpg.lineTo(p[0], p[1]) : fpg.moveTo(p[0], p[1]));
+    if (P.length === 4) { fpg.closePath(); fpg.fillStyle = 'rgba(127,208,196,.18)'; fpg.fill(); }
+    fpg.strokeStyle = '#7fd0c4'; fpg.lineWidth = 2; fpg.stroke();
+  }
+  P.forEach((p, i) => { fpg.beginPath(); fpg.arc(p[0], p[1], 14, 0, 7); fpg.fillStyle = 'rgba(11,11,14,.6)'; fpg.fill(); fpg.strokeStyle = '#7fd0c4'; fpg.lineWidth = 2; fpg.stroke();
+    fpg.fillStyle = '#fff'; fpg.font = '12px system-ui'; fpg.textAlign = 'center'; fpg.textBaseline = 'middle'; fpg.fillText(i + 1, p[0], p[1]); });
+  $('fpo').disabled = fpTmp.length < 4;
+  $('fpm').textContent = fpTmp.length < 4 ? `床の四角形の四隅をタップ（${fpTmp.length}/4）。模様が均一な、床だけの範囲を囲んでください` : '点をドラッグして調整。よければ「決定」';
+}
+const fpPos = e => { const r = fpc.getBoundingClientRect(), { s, x, y } = fpView; return [e.clientX - r.left, e.clientY - r.top, s, x, y]; };
+fpc.onpointerdown = e => {
+  const [px, py, s, x, y] = fpPos(e), W = fpImg.width * s, H = fpImg.height * s; let best = -1, bd = 32;   // 近くの点があればつかむ
+  fpTmp.forEach(([a, b], i) => { const dd = Math.hypot(x + a * W - px, y + b * H - py); if (dd < bd) { bd = dd; best = i; } });
+  if (best < 0 && fpTmp.length < 4) { fpTmp.push([0, 0]); best = fpTmp.length - 1; }
+  fpDrag = best; if (best >= 0) { fpc.setPointerCapture(e.pointerId); fpc.onpointermove(e); }
+};
+fpc.onpointermove = e => {
+  if (fpDrag < 0) return; const [px, py, s, x, y] = fpPos(e);
+  fpTmp[fpDrag] = [Math.min(1, Math.max(0, (px - x) / (fpImg.width * s))), Math.min(1, Math.max(0, (py - y) / (fpImg.height * s)))]; fpDraw();
+};
+fpc.onpointerup = fpc.onpointercancel = () => { fpDrag = -1; };
+function fpOpen(img, pts) { return new Promise(res => { fpImg = img; fpTmp = pts.map(p => p.slice()); fpDone = res; fp.classList.add('on'); fpLayout(); }); }
+$('fpo').onclick = () => { fp.classList.remove('on'); fpDone(fpTmp.map(p => p.slice())); };
+$('fpx').onclick = () => { fp.classList.remove('on'); fpDone(null); };
+$('fpr').onclick = () => { fpTmp = []; fpDraw(); };
+addEventListener('resize', () => { if (fp.classList.contains('on')) fpLayout(); });
+$('flf').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    st('写真を読み込み中…'); const src = await floorLoad(f), pts = await fpOpen(src, []);
+    if (!pts) { st('床の写真をキャンセルしました。'); return; }
+    floorSrc = src; floorFile = f; await floorSet(f, pts);
+    $('fl').value = '6'; applyFloor(); light(); keep('floorimg', f); put('floormeta', { pts }); st('床を写真にしました。大きさは「背景設定 → 舞台」で調整できます。');
+  } catch (err) { st('床の写真に失敗: ' + (err?.message || err)); }
+};
+$('flre').onclick = async () => {
+  if (!floorFile) { st('床の写真がまだありません。「床の写真を選ぶ」から読み込んでください。'); return; }
+  const pts = await fpOpen(floorSrc, floorPts); if (!pts) return;
+  try { await floorSet(floorFile, pts); applyFloor(); light(); put('floormeta', { pts }); } catch (err) { st('床の写真に失敗: ' + (err?.message || err)); }
+};
+$('fld').onclick = () => {
+  if (!floorFile) return;
+  photoTex?.dispose(); photoTex = photoAvg = null; floorFile = floorSrc = null; floorPts = [];
+  if ($('fl').value === '6') $('fl').value = '1';
+  applyFloor(); light(); idb('readwrite', s => { s.delete('floorimg'); s.delete('floormeta'); }).catch(fail); st('床の写真を外しました。');
+};
+$('fls').oninput = $('flr').oninput = $('fln').onchange = applyFloor;
+$('flc').onchange = light; $('fl').addEventListener('change', light);
+
+// ---- 背面カメラの背景：携帯を透明な板に見せる。1枚撮って奥の板に貼り、顔の動きに合わせて窓の見え方（視差）で動かす ----
+function placeCamBg() {
+  const on = +$('bg').value === 8 && !!camTex && !!S.F && tmode; camA.visible = on; if (!on) { camB.visible = false; return; }
+  const u = S.u, f = S.F[0], P = boxPoly(), zw = Math.min(...P.map(q => q.z)), D = val('cbd') * 100 * u, E = val('di') * u, zP = (S.N === 1 ? f.pa.z : zw) - D;
+  const th = val('cbf') * Math.PI / 180, lg = 2 * (D + E) * Math.tan(th / 2);   // 目の位置から見て、背面カメラと同じ角度の大きさになるように（目は窓から E 手前）
+  const W = camAsp >= 1 ? lg : lg * camAsp, H = camAsp >= 1 ? lg / camAsp : lg, cx = S.N === 1 ? (f.pa.x + f.pb.x) / 2 : S.c.x, cy = (f.pa.y + f.pc.y) / 2;
+  S.cb = { W, H, cx, cy, zP, D, zw: zP + D };
+  camA.scale.set(3 * W, 3 * H, 1); camB.scale.set(3 * W, 3 * H, 1); camPose();
+}
+const camV = new THREE.Vector3(), camQ = new THREE.Quaternion();
+function camPose() {                                     // 板の位置と向き。透過モードでは「撮ったときの向き」に固定し、携帯の傾きの逆に動かす
+  const c = S.cb; if (!c || !camA.visible) return;
+  [camA, camB].forEach((m, i) => {
+    camQ.identity(); if (tmode && S.N === 1) camQ.copy(tQi).multiply(m.userData.q);
+    m.quaternion.copy(camQ); m.position.set(c.cx, c.cy, c.zw).add(camV.set(0, 0, -(c.D + i * S.u)).applyQuaternion(camQ));
+  });
+}
+function camSet(cv, fade = true) {
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.repeat.set(3, 3); t.offset.set(-1, -1);   // 板は写真の3倍。外側は端の色を引き伸ばす
+  const old = camTex, oq = camA.userData.q; camTex = t; camAsp = cv.width / cv.height; camA.material.map = t;
+  camA.userData.q = tmode && S.N === 1 ? tQ.clone() : new THREE.Quaternion();     // 撮ったときの携帯の向き
+  if (old && fade && camA.visible) { camB.material.map?.dispose(); camB.material.map = old; camB.userData.q = oq; camB.material.needsUpdate = true; camB.visible = true; camA.material.transparent = true; camA.material.opacity = 0; camFade = performance.now(); }
+  else old?.dispose();
+  camA.material.needsUpdate = true; placeCamBg();
+}
+async function camShoot() {                              // 時間分割：正面カメラを止める → 背面で1枚撮る → 正面に戻す
+  if (camBusy) return; camBusy = true;
+  const was = tracking; let ms = null;
+  try {
+    st('背面カメラで撮影中…（顔追跡は一時停止）');
+    if (was) { tracking = false; video.srcObject.getTracks().forEach(t => t.stop()); }
+    const sz = { width: { ideal: 1920 }, height: { ideal: 1080 } }, man = $('cbs').value;      // man: プルダウンで選んだカメラ（空なら自動）
+    if (man) { try { ms = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: man }, ...sz } }); } catch (e) { st('選んだカメラを開けなかったので、自動で撮ります。'); } }
+    if (!ms && $('cbw').checked && camWide) { try { ms = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: camWide }, ...sz } }); } catch (e) { camWide = null; } }
+    if (!ms) ms = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, ...sz } });
+    if (!man && $('cbw').checked && camWide === null && !camWideTried) {      // 初回だけ：名前から超広角を探す（許可後でないと名前が見えない）
+      camWideTried = true;
+      try {
+        const ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+        const w = ds.find(d => /ultra|超広角|0\.5/i.test(d.label) && !/front|user|前面|フロント/i.test(d.label));
+        if (w && w.deviceId !== ms.getVideoTracks()[0]?.getSettings().deviceId) {
+          const m2 = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: w.deviceId }, ...sz } });
+          ms.getTracks().forEach(t => t.stop()); ms = m2; camWide = w.deviceId;
+        }
+      } catch (e) { /* 選べなければ標準のまま */ }
+    }
+    camUsedWide = !man && !!camWide && ms.getVideoTracks()[0]?.getSettings().deviceId === camWide;
+    const v2 = document.createElement('video'); v2.playsInline = true; v2.muted = true; v2.srcObject = ms; await v2.play();
+    await new Promise(r => setTimeout(r, 700));          // 露出・ピントが落ち着くまで待つ
+    const k = Math.min(1, 1600 / Math.max(v2.videoWidth, v2.videoHeight)), cv = document.createElement('canvas');
+    cv.width = Math.round(v2.videoWidth * k); cv.height = Math.round(v2.videoHeight * k); cv.getContext('2d').drawImage(v2, 0, 0, cv.width, cv.height);
+    ms.getTracks().forEach(t => t.stop()); ms = null;
+    camSet(cv); cv.toBlob(b => b && put('camback', b), 'image/jpeg', 0.85); st('背景を更新しました。' + (camUsedWide ? '（超広角。画角の値を広げて合わせてください）' : '')); camList();
+  } catch (err) { st('背面カメラの撮影に失敗: ' + (err?.message || err)); }
+  finally {
+    ms?.getTracks().forEach(t => t.stop());
+    if (was) { try { video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } }); await video.play(); lastT = -1; tracking = true; } catch (e) { st('正面カメラの再開に失敗: ' + (e?.message || e)); $('cam').textContent = 'カメラ開始'; } }
+    camBusy = false; camLast = performance.now();
+  }
+}
+function camTick(dt, pe) {
+  if (camFade) { const k = Math.min(1, (performance.now() - camFade) / 800); camA.material.opacity = k; if (k >= 1) { camFade = 0; camA.material.transparent = false; camA.material.needsUpdate = true; camB.visible = false; } }
+  if (+$('bg').value !== 8 || !camTex || camBusy) return;
+  const now = performance.now(), iv = val('cbi') > 0 ? Math.max(3, val('cbi')) * 1000 : 0;
+  if (iv > 0 && now - camLast > iv) { camShoot(); return; }                // 定期更新（0なら撮り直さない）
+  const tl = val('cbt');
+  if (tl > 0 && tmode && S.N === 1) {                                      // 撮影時の向きから大きくずれ、携帯が止まったら1回だけ撮り直す
+    const moving = tQ.angleTo(camPq) > 0.4 * Math.PI / 180; camPq.copy(tQ);
+    if (moving) camStill = now;
+    else if (now - camStill > 800 && now - camLast > 3000 && tQ.angleTo(camA.userData.q) > tl * Math.PI / 180) { camShoot(); return; }
+  }
+  if ($('cbe').checked && now - camChk > 400 && S.N === 1 && S.cb) {       // 窓の四隅から視線を伸ばして、写真の範囲に収まっているか（板の座標で判定）
+    camChk = now; const f = S.F[0], c0 = S.cb, P = V(c0.cx, c0.cy, c0.zw), pq = tmode ? tQi.clone().multiply(camA.userData.q).invert() : null;
+    const loc = p => { const r = p.clone().sub(P); if (pq) r.applyQuaternion(pq); return r; }, e = loc(pe); if (e.z <= 0.01 * S.u) return;
+    let out = false; for (const c of [f.pa, f.pb, f.pc, f.pb.clone().add(f.pc).sub(f.pa)]) {
+      const q = loc(c), t = (-c0.D - e.z) / (q.z - e.z), x = e.x + (q.x - e.x) * t, y = e.y + (q.y - e.y) * t;
+      if (Math.abs(x) > c0.W / 2 * 0.98 || Math.abs(y) > c0.H / 2 * 0.98) out = true;
+    }
+    if (out && now - camLast > 6000) camShoot();
+  }
+}
+$('cbg').onclick = async () => { if (!tmode) { st('背面カメラの背景は透過モード専用です（「表示」ボタンで透過に切り替え）。'); return; } await camShoot(); };
+$('cbd').oninput = $('cbf').oninput = placeCamBg; $('di').addEventListener('input', placeCamBg);
+
+// ---- 透過ディスプレイ：携帯を透明な板に見せる ----
+// 卓上＝携帯が動かない（傾きは手入力）。手持ち＝傾きセンサーで携帯の向きを追う。
+// 背景写真は「撮ったときの向き」に固定。モデルは背景上の1点（地面）に置いたように、傾きと目の位置から画面上の位置を決める。
+let tmode = false, tPrev = null, tSens = false, tAng = null, tYaw0 = null, tAnc = false;
+function camUi() { document.querySelectorAll('[data-cam]').forEach(e => { e.style.display = tmode ? '' : 'none'; }); }   // 背面カメラ関連は透過モードのときだけ出す
+if (+$('bg').value === 8) { $('bg').value = '0'; applyBg(); }   // 保存に背面カメラ背景が残っていても、透過以外では使わない
+camUi();
+const tQ = new THREE.Quaternion(), tQt = new THREE.Quaternion(), tQi = new THREE.Quaternion(), tQd = new THREE.Quaternion(), tQw = new THREE.Quaternion(), tQ0 = new THREE.Quaternion();
+const tEu = new THREE.Euler(), tEu2 = new THREE.Euler(), tQ1 = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2), zAx = new THREE.Vector3(0, 0, 1);
+const tHandler = e => { tAng = { alpha: e.alpha || 0, beta: e.beta, gamma: e.gamma }; };
+async function tSensor(on) {
+  if (!on) { removeEventListener('deviceorientation', tHandler); tSens = false; tAng = null; return false; }
+  if (tSens) return true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission && (await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('許可されませんでした');
+    addEventListener('deviceorientation', tHandler); tSens = true; tYaw0 = null; tAng = null; return true;
+  } catch (err) { st('傾きセンサーを使えません: ' + (err?.message || err)); $('tpg').checked = false; return false; }
+}
+function tDev() {                                        // センサー → 携帯の向き（起動時の向きを正面、重力を上とする）
+  if (!tAng || tAng.beta == null) return null;
+  const d = Math.PI / 180, o = (screen.orientation?.angle ?? window.orientation ?? 0) * d;
+  tEu.set(tAng.beta * d, tAng.alpha * d, -tAng.gamma * d, 'YXZ'); tQd.setFromEuler(tEu); tQd.multiply(tQ1); tQd.multiply(tQ0.setFromAxisAngle(zAx, -o));
+  if (tYaw0 === null) tYaw0 = tEu2.setFromQuaternion(tQd, 'YXZ').y;
+  return tQd.premultiply(tQw.setFromAxisAngle(yAx, -tYaw0));
+}
+const tAncDir = new THREE.Vector3();
+function tAncSet() {                                     // 固定した瞬間の画面上の位置（足元）を、世界の向きとして記憶する
+  const u = S.u, bx = val('stx'), by = 0.2 + ($('stc').checked ? val('sty') : 0), bz = S.c.z / u + val('stz');
+  tAncDir.set(bx - eye.x, by - eye.y, bz - eye.z).normalize().applyQuaternion(tQ);
+}
+const tBase = new THREE.Vector3();
+function tMap(v) { return v.sub(tBase).applyQuaternion(tQi).add(rig.position); }   // 固定中：モデルの足元を軸に、小物や光も同じ動きにする
+function tAncReset() { if (!tAnc) return; tAnc = false; rig.rotation.set(0, yaw, 0); standPos(); propG.position.set(0, 0, 0); propG.quaternion.identity(); }
+const tQd2 = new THREE.Quaternion(), sfFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+function tShadow() {                                     // 透過：影を受ける床をモデルの足元に置いて広げる（影が途中で切れないように）。固定中は重力の向きに合わせて傾ける
+  const q = tAnc ? tQd2.copy(tQi).multiply(sfFlat) : sfFlat;
+  if (shadowFloor.visible) { shadowFloor.position.set(rig.position.x, rig.position.y + 0.01 * S.u, rig.position.z); shadowFloor.scale.set(S.r * 12, S.r * 12, 1); shadowFloor.quaternion.copy(q); }
+  if (pool.visible) { pool.position.set(rig.position.x, rig.position.y + 0.02 * S.u, rig.position.z); pool.quaternion.copy(q); }
+}
+function tpTick() {
+  if (!tmode) return;
+  if (S.N !== 1) { tQ.identity(); tQi.identity(); tAncReset(); tShadow(); return; }
+  if (tSens) { const q = tDev(); if (q) tQt.copy(q); } else tQt.setFromAxisAngle(xAx, -val('tpt') * Math.PI / 180);   // 後ろへ倒す＝x軸まわりに負の回転
+  tQ.slerp(tQt, tSens ? 0.4 : 1); tQi.copy(tQ).invert(); camPose();
+  if (!$('tpa').checked) { tAncReset(); tShadow(); return; }
+  if (!tAnc) { tQ.copy(tQt); tQi.copy(tQ).invert(); tAncSet(); tAnc = true; }
+  const u = S.u, d = tAncDir.clone().applyQuaternion(tQi), z = S.c.z + val('stz') * u, L = eye.z - z / u;   // d: いま携帯から見た、固定した点の向き
+  if (-d.z > 0.15) { const k = L / -d.z; rig.position.set((eye.x + d.x * k) * u, (eye.y + d.y * k) * u, z); }   // 遠くの1点は、目の動きに合わせて窓の上を動く（背景と同じ見え方）
+  else rig.position.set((eye.x + 500) * u, 0, z);                                                                // 向きが大きく外れたら画面の外へ
+  rig.quaternion.copy(tQi).multiply(tQw.setFromAxisAngle(yAx, yaw));                                              // 体は重力の向きに立たせる
+  tBase.set(S.c.x + val('stx') * u, (0.2 + ($('stc').checked ? val('sty') : 0)) * u, S.c.z + val('stz') * u);   // 固定前の足元
+  propG.quaternion.copy(tQi); propG.position.copy(tBase).applyQuaternion(tQi).negate().add(rig.position);   // 小物・妖精：足元を軸に、モデルと同じだけ動かす
+  tShadow();
+}
+async function tEnter() {
+  tmode = true; pv = false; pvLabel(); camUi(); tPrev = { bg: +$('bg').value === 8 ? '0' : $('bg').value, fl: $('fl').value };
+  $('bg').value = '8'; $('fl').value = '0'; tQ.identity(); tQt.identity(); tQi.identity(); applyBg(); applyFloor(); light();
+  if ($('tpg').checked) await tSensor(true);
+  if (S.N !== 1) st('透過の傾き追従は1面のときだけ働きます。');
+  camShoot();                                              // 背景は自動で撮る
+}
+function tExit() {
+  tmode = false; camUi(); tSensor(false); tAncReset(); shadowFloor.quaternion.copy(sfFlat); pool.quaternion.copy(sfFlat);
+  if (tPrev) { $('bg').value = tPrev.bg; $('fl').value = tPrev.fl; tPrev = null; }
+  applyBg(); applyFloor(); light(); placeCamBg();
+}
+$('tpu').onchange = () => {                                // 使い方ごとの標準値
+  const h = $('tpu').value === '1', set = (id, v) => { const e = $(id); if (e.type === 'checkbox') e.checked = v; else e.value = v; };
+  set('tpg', h); set('tpa', h); set('cbi', 0); set('cbe', h); set('cbd', h ? 4 : 3);
+  if (tmode) tSensor(h);
+  placeCamBg();
+};
+$('tpg').onchange = () => { if (tmode) tSensor($('tpg').checked); };
+$('tpz').onclick = () => { tYaw0 = null; tAnc = false; };
+['stx', 'stz', 'sty', 'stc'].forEach(id => $(id).addEventListener('input', () => { tAnc = false; }));   // 立ち位置を動かしたら、その位置で固定し直す
+
+// ---- スライダーの横に現在の値を出す（復元・他の操作で値が変わっても追従） ----
+const rgOut = new Map();
+document.querySelectorAll('input[type=range]').forEach(r => { const o = document.createElement('output'); o.className = 'rv'; r.after(o); rgOut.set(r, o); });
+function rgSync() { rgOut.forEach((o, r) => { const dp = (r.step.split('.')[1] || '').length, t = (+r.value).toFixed(dp); if (o.textContent !== t) o.textContent = t; }); }
+rgSync(); setInterval(rgSync, 250);
+
+// ---- 背面カメラを選ぶ（許可後でないとカメラ名が見えないので、撮影のたびに一覧を更新） ----
+async function camList(msg) {
+  try {
+    const sel = $('cbs'), cur = sel.value, ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput' && d.label && !/front|user|前面|フロント/i.test(d.label));
+    const keep = cur || ds.find(d => d.label === localStorage.getItem(KEY + ':cam'))?.deviceId || '';
+    sel.textContent = ''; sel.add(new Option('自動（超広角を優先）', '')); ds.forEach(d => sel.add(new Option(d.label, d.deviceId)));
+    sel.value = keep; if (sel.value !== keep) sel.value = '';
+    if (msg) st(ds.length ? '背面カメラ: ' + ds.map(d => d.label).join(' / ') : 'カメラ名はまだ見えません。一度「背景を撮る」と見えるようになります。');
+  } catch (e) { if (msg) st('カメラ一覧を取れませんでした: ' + (e?.message || e)); }
+}
+$('cbs').onchange = () => { try { localStorage.setItem(KEY + ':cam', $('cbs').value ? $('cbs').selectedOptions[0].textContent : ''); } catch {} if (tmode) camShoot(); };
+$('cbl').onclick = () => camList(true);
+
 async function restore() {
   const parts = [], bad = [];
   navigator.storage?.persist?.(); libRefresh();
@@ -2757,6 +3256,8 @@ async function restore() {
     const bi = await get('backimg'), bm = await get('backmeta');
     if (bi && bm) { const im = new Image(), bu = URL.createObjectURL(bi); im.src = bu; await im.decode(); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); URL.revokeObjectURL(bu); setBack(c, bm); parts.push('奥の人'); }
     await restoreModel(parts, bad);
+    try { const cb = await get('camback'); if (cb) { const im = new Image(), u = URL.createObjectURL(cb); im.src = u; await im.decode(); URL.revokeObjectURL(u); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); camSet(c, false); parts.push('背面カメラの背景'); } } catch (err) { bad.push('背面カメラの背景: ' + (err?.message || err)); }
+    try { const fi = await get('floorimg'), fm = await get('floormeta'); if (fi && fm) { await floorSet(fi, fm.pts); applyFloor(); light(); parts.push('床の写真'); } } catch (err) { bad.push('床の写真: ' + (err?.message || err)); }
     const pn = (await get('pn')) || 0;
     for (let i = 0; i < pn; i++) { const f = await get('pf:' + i); if (f) await addProp(f, saved.props?.[i]); }
     if (props.length) { parts.push('小物 ' + props.length + '件'); rebuildSel(0); light(); }
@@ -2839,14 +3340,14 @@ restore();
     }
   }
   renderer.shadowMap.needsUpdate = true;
-  skyFrame(dt);
+  tpTick(); skyFrame(dt); camTick(dt, peW);
   const lp = +$('lt').value;
   if (lp === 5) {                                        // 部屋の光を空に合わせる
     const P = skyP, h = val('sh') * S.u, sl = +$('nl').value;
     if (sl < 3) nightMode = sl;
     else { if (P.nt < 0.25) nArmed = true; if (nArmed && P.nt > 0.6) { nightMode = Math.floor(Math.random() * 3); nArmed = false; } }   // ランダム：夜が来るたびに引き直す
     const M = NMODE[nightMode], w = P.nt;                // 夜に近いほど、選んだ夜の光に寄せる
-    hemi.color.copy(P.hc); hemi.groundColor.copy(P.hg); hemi.intensity = P.hi * (1 + (M.hm - 1) * w);
+    hemi.color.copy(P.hc); hemi.groundColor.copy(P.hg); hemi.intensity = P.hi * (1 + (M.hm - 1) * w); tintGround();
     sun.color.copy(P.sc); sun.intensity = P.si * (1 + (M.sm - 1) * w); sun.position.set(S.c.x + P.sx * h, P.sy * h, S.c.z + P.sz * h);
   }
   const tt = performance.now(), fk = val('fk'), lampOn = lp === 3 || (lp === 5 && (lampPos || NMODE[nightMode].lamp)), nt = lp === 3 ? 1 : skyP.nt;
@@ -2856,6 +3357,7 @@ restore();
     const t2 = tt + i * 1900, fl = 1 + fk * (0.08 * Math.sin(t2 * 0.009) + 0.06 * Math.sin(t2 * 0.0237) + 0.05 * Math.sin(t2 * 0.0517 + 1.3) * Math.sin(t2 * 0.0131)), j = 0.15 * S.u * fk, bs = lampBases[i];
     L.intensity = 2 * (e ? e.o.li : 1) * fl * nt;
     L.position.set(bs.x + j * Math.sin(t2 * 0.0113), bs.y + 1.3 * j * Math.sin(t2 * 0.0171 + 1), bs.z + j * Math.sin(t2 * 0.0097 + 2));
+    if (tmode && tAnc) tMap(L.position);                 // 固定中は、光も小物と同じ動き
     if (e) e.o.piv.traverse(m => { const mt = m.material; if (mt?.emissive) { mt.userData.ei ??= mt.emissiveIntensity; mt.emissiveIntensity = mt.userData.ei * fl * (0.25 + 0.75 * nt); } });   // 発光部分も光に合わせる
   });
   const sk = val('sk');
